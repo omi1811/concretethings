@@ -1,0 +1,49 @@
+{
+  "name": "concretethings-qms",
+  "short_name": "ConcreteQMS",
+  "description": "Construction Quality Management System - ISO Compliant",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1E40AF",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business", "utilities"],
+  "shortcuts": [
+    {
+      "name": "New Batch Entry",
+      "short_name": "New Batch",
+      "description": "Create a new batch register entry",
+      "url": "/dashboard/batches/new",
+      "icons": [{ "src": "/icon-batch-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "New Cube Test",
+      "short_name": "Cube Test",
+      "description": "Record a new cube test",
+      "url": "/dashboard/cube-tests/new",
+      "icons": [{ "src": "/icon-cube-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Training Register",
+      "short_name": "Training",
+      "description": "Add training record",
+      "url": "/dashboard/training/new",
+      "icons": [{ "src": "/icon-training-96.png", "sizes": "96x96" }]
+    }
+  ]
+}

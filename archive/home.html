@@ -1,0 +1,106 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
+import { Button } from '../components/Button';
+import { Badge } from '../components/Badge';
+import { ArrowRight, FileCheck, Beaker, ClipboardCheck, ShieldCheck, BarChart3, Calculator } from 'lucide-react';
+import styles from './_index.module.css';
+
+const features = [
+  {
+    icon: <FileCheck size={24} />,
+    title: 'Delivery Ticket Management',
+    description: 'Complete ASTM C94 compliant concrete batch and delivery ticket tracking from plant to pour site.',
+  },
+  {
+    icon: <Beaker size={24} />,
+    title: 'Test Specimen Registration',
+    description: 'ASTM C31 compliant cylinder and cube management with complete sample tracking and curing records.',
+  },
+  {
+    icon: <ClipboardCheck size={24} />,
+    title: 'Compression Test Tracking',
+    description: 'ACI 318 compliant compression test results with automated calculations and compliance verification.',
+  },
+  {
+    icon: <ShieldCheck size={24} />,
+    title: 'Standards Compliance',
+    description: 'Built-in compliance with ASTM C94, ASTM C31, and ACI 318 standards for professional quality assurance.',
+  },
+  {
+    icon: <BarChart3 size={24} />,
+    title: 'Real-Time Quality Control',
+    description: 'Monitor test results in real-time with automated alerts for non-conforming batches and specimens.',
+  },
+  {
+    icon: <Calculator size={24} />,
+    title: 'Automated Calculations',
+    description: 'Automatic strength calculations, statistical analysis, and compliance reports generated instantly.',
+  },
+];
+
+export default function IndexPage() {
+  return (
+    <>
+      <Helmet>
+        <title>Advanced Concrete Registration System</title>
+        <meta
+          name="description"
+          content="The leading SaaS platform for streamlining concrete registration, ensuring quality, and managing compliance with ease."
+        />
+      </Helmet>
+      <div className={styles.pageWrapper}>
+        <main>
+          {/* Hero Section */}
+          <section className={styles.hero}>
+            <div className={styles.heroContent}>
+              <Badge variant="secondary">ASTM & ACI Compliant</Badge>
+              <h1 className={styles.headline}>
+                Professional Concrete Testing <br />
+                & Registration System
+              </h1>
+              <p className={styles.subheadline}>
+                Comprehensive platform for concrete delivery tracking, test specimen management, and compression test compliance—all in one standards-compliant system.
+              </p>
+              <div className={styles.ctaButtons}>
+                <Button asChild size="lg">
+                  <Link to="/dashboard">
+                    Go to Dashboard <ArrowRight size={20} />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link to="#features">Learn More</Link>
+                </Button>
+              </div>
+            </div>
+            <div className={styles.heroImageContainer}>
+              <img
+                src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2"
+                alt="Construction site with digital interface overlay"
+                className={styles.heroImage}
+              />
+              <div className={styles.heroImageOverlay}></div>
+            </div>
+          </section>
+
+          {/* Features Section */}
+          <section id="features" className={styles.features}>
+            <div className={styles.sectionHeader}>
+              <h2>Complete Concrete Testing & Registration</h2>
+              <p>From delivery tickets to compression tests—manage the entire concrete quality assurance lifecycle with professional-grade, standards-compliant tools.</p>
+            </div>
+            <div className={styles.featuresGrid}>
+              {features.map((feature) => (
+                <div key={feature.title} className={styles.featureCard}>
+                  <div className={styles.featureIcon}>{feature.icon}</div>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.description}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
+      </div>
+    </>
+  );
+}

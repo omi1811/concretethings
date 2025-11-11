@@ -1,0 +1,166 @@
+import React, { useState } from 'react';
+import { Helmet } from 'react-helmet';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/Tabs';
+import { useGetConcreteBatches } from '../helpers/concreteBatchApi';
+import { useGetTestSpecimens } from '../helpers/testSpecimenApi';
+import { useGetCompressionTests } from '../helpers/compressionTestApi';
+import { ConcreteBatchForm } from '../components/ConcreteBatchForm';
+import { ConcreteBatchTable } from '../components/ConcreteBatchTable';
+import { TestSpecimenForm } from '../components/TestSpecimenForm';
+import { TestSpecimenTable } from '../components/TestSpecimenTable';
+import { CompressionTestForm } from '../components/CompressionTestForm';
+import { CompressionTestTable } from '../components/CompressionTestTable';
+import { Skeleton } from '../components/Skeleton';
+import { type Selectable } from 'kysely';
+import { type ConcreteBatches, type TestSpecimens, type CompressionTests } from '../helpers/schema';
+import styles from './dashboard.module.css';
+
+export default function DashboardPage() {
+  const { data: batches, isFetching: batchesFetching, error: batchesError } = useGetConcreteBatches();
+  const { data: specimens, isFetching: specimensFetching, error: specimensError } = useGetTestSpecimens();
+  const { data: tests, isFetching: testsFetching, error: testsError } = useGetCompressionTests();
+
+  const [editingBatch, setEditingBatch] = useState<Selectable<ConcreteBatches> | null>(null);
+  const [editingSpecimen, setEditingSpecimen] = useState<Selectable<TestSpecimens> | null>(null);
+  const [editingTest, setEditingTest] = useState<Selectable<CompressionTests> | null>(null);
+
+  const handleEditBatch = (batch: Selectable<ConcreteBatches>) => {
+    setEditingBatch(batch);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleEditSpecimen = (specimen: Selectable<TestSpecimens>) => {
+    setEditingSpecimen(specimen);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleEditTest = (test: Selectable<CompressionTests>) => {
+    setEditingTest(test);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  return (
+    <>
+      <Helmet>
+        <title>Dashboard - Concrete Registration System</title>
+        <meta name="description" content="Manage concrete batches, test specimens, and compression tests." />
+      </Helmet>
+      <div className={styles.dashboardContainer}>
+        <header className={styles.header}>
+          <h1>Concrete Registration System</h1>
+          <p>Manage delivery tickets, test specimens, and compression test results.</p>
+        </header>
+
+        <Tabs defaultValue="batches" className={styles.tabs}>
+          <TabsList>
+            <TabsTrigger value="batches">Delivery Tickets</TabsTrigger>
+            <TabsTrigger value="specimens">Test Specimens</TabsTrigger>
+            <TabsTrigger value="tests">Compression Tests</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="batches">
+            <div className={styles.tabContent}>
+              <section className={styles.formSection}>
+                <ConcreteBatchForm
+                  key={editingBatch?.id ?? 'new'}
+                  editingBatch={editingBatch}
+                  onSuccess={() => setEditingBatch(null)}
+                  onCancel={() => setEditingBatch(null)}
+                />
+              </section>
+
+              <section className={styles.tableSection}>
+                <h2>Registered Delivery Tickets</h2>
+                {batchesFetching && !batches ? (
+                  <TableSkeleton />
+                ) : batchesError ? (
+                  <div className={styles.errorState}>Error: {batchesError.message}</div>
+                ) : (
+                  <ConcreteBatchTable
+                    batches={batches || []}
+                    onEdit={handleEditBatch}
+                    isUpdating={batchesFetching}
+                  />
+                )}
+              </section>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="specimens">
+            <div className={styles.tabContent}>
+              <section className={styles.formSection}>
+                <TestSpecimenForm
+                  key={editingSpecimen?.id ?? 'new'}
+                  editingSpecimen={editingSpecimen}
+                  onSuccess={() => setEditingSpecimen(null)}
+                  onCancel={() => setEditingSpecimen(null)}
+                />
+              </section>
+
+              <section className={styles.tableSection}>
+                <h2>Registered Test Specimens</h2>
+                {specimensFetching && !specimens ? (
+                  <TableSkeleton />
+                ) : specimensError ? (
+                  <div className={styles.errorState}>Error: {specimensError.message}</div>
+                ) : (
+                  <TestSpecimenTable
+                    specimens={specimens || []}
+                    onEdit={handleEditSpecimen}
+                    isUpdating={specimensFetching}
+                  />
+                )}
+              </section>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="tests">
+            <div className={styles.tabContent}>
+              <section className={styles.formSection}>
+                <CompressionTestForm
+                  key={editingTest?.id ?? 'new'}
+                  editingTest={editingTest}
+                  onSuccess={() => setEditingTest(null)}
+                  onCancel={() => setEditingTest(null)}
+                />
+              </section>
+
+              <section className={styles.tableSection}>
+                <h2>Compression Test Results</h2>
+                {testsFetching && !tests ? (
+                  <TableSkeleton />
+                ) : testsError ? (
+                  <div className={styles.errorState}>Error: {testsError.message}</div>
+                ) : (
+                  <CompressionTestTable
+                    tests={tests || []}
+                    onEdit={handleEditTest}
+                    isUpdating={testsFetching}
+                  />
+                )}
+              </section>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
+  );
+}
+
+const TableSkeleton = () => (
+  <div className={styles.skeletonContainer}>
+    <div className={styles.skeletonHeader}>
+      <Skeleton style={{ height: '1.5rem', width: '150px' }} />
+      <Skeleton style={{ height: '1.5rem', width: '100px' }} />
+    </div>
+    {[...Array(5)].map((_, i) => (
+      <div key={i} className={styles.skeletonRow}>
+        <Skeleton style={{ height: '1.25rem', flex: 1 }} />
+        <Skeleton style={{ height: '1.25rem', flex: 1 }} />
+        <Skeleton style={{ height: '1.25rem', flex: 1 }} />
+        <Skeleton style={{ height: '1.25rem', flex: 0.5 }} />
+        <Skeleton style={{ height: '1.25rem', flex: 0.5 }} />
+      </div>
+    ))}
+  </div>
+);

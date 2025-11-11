@@ -1,0 +1,272 @@
+import React, { useEffect } from 'react';
+import { z } from 'zod';
+import { useForm, Form, FormItem, FormLabel, FormControl, FormMessage } from './Form';
+import { Input } from './Input';
+import { Button } from './Button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './Select';
+import { Textarea } from './Textarea';
+import { MixDesignUpload } from './MixDesignUpload';
+import { toast } from 'sonner';
+import { useSaveMixDesign } from '../helpers/mixDesignApi';
+import { schema as mixDesignSchema } from '../endpoints/mix-design_POST.schema';
+import type { Selectable } from 'kysely';
+import type { MixDesigns } from '../helpers/schema';
+import styles from './MixDesignForm.module.css';
+
+type MixDesignFormProps = {
+  editingMixDesign: Selectable<MixDesigns> | null;
+  onSuccess: () => void;
+  onCancel: () => void;
+  className?: string;
+};
+
+export const MixDesignForm = ({ editingMixDesign, onSuccess, onCancel, className }: MixDesignFormProps) => {
+  const saveMutation = useSaveMixDesign();
+
+  const form = useForm({
+    schema: mixDesignSchema,
+    defaultValues: {
+      projectName: '',
+      mixDesignId: '',
+      specifiedStrengthPsi: 0,
+      slumpInches: null,
+      airContentPercent: null,
+      batchVolume: null,
+      volumeUnit: 'cubic_yards',
+      materials: null,
+      notes: null,
+      document: null,
+      documentName: null,
+      ocrText: null,
+    },
+  });
+
+  useEffect(() => {
+    if (editingMixDesign) {
+      form.setValues({
+        id: editingMixDesign.id,
+        projectName: editingMixDesign.projectName,
+        mixDesignId: editingMixDesign.mixDesignId,
+        specifiedStrengthPsi: editingMixDesign.specifiedStrengthPsi,
+        slumpInches: editingMixDesign.slumpInches ? Number(editingMixDesign.slumpInches) : null,
+        airContentPercent: editingMixDesign.airContentPercent ? Number(editingMixDesign.airContentPercent) : null,
+        batchVolume: editingMixDesign.batchVolume ? Number(editingMixDesign.batchVolume) : null,
+        volumeUnit: editingMixDesign.volumeUnit,
+        materials: editingMixDesign.materials,
+        notes: editingMixDesign.notes,
+        document: editingMixDesign.document,
+        documentName: editingMixDesign.documentName,
+        ocrText: editingMixDesign.ocrText,
+      });
+    }
+  }, [editingMixDesign, form.setValues]);
+
+  const onSubmit = (values: z.infer<typeof mixDesignSchema>) => {
+    saveMutation.mutate(values, {
+      onSuccess: () => {
+        toast.success(`Mix design ${editingMixDesign ? 'updated' : 'created'} successfully!`);
+        onSuccess();
+        form.setValues({
+          projectName: '',
+          mixDesignId: '',
+          specifiedStrengthPsi: 0,
+          slumpInches: null,
+          airContentPercent: null,
+          batchVolume: null,
+          volumeUnit: 'cubic_yards',
+          materials: null,
+          notes: null,
+          document: null,
+          documentName: null,
+          ocrText: null,
+        });
+      },
+      onError: (error) => {
+        if (error instanceof Error) {
+          toast.error(`Failed to save mix design: ${error.message}`);
+        } else {
+          toast.error('An unknown error occurred while saving the mix design.');
+        }
+      },
+    });
+  };
+
+  return (
+    <Form {...form}>
+      <h3 className={styles.formTitle}>
+        {editingMixDesign ? 'Edit Mix Design' : 'Add New Mix Design'}
+      </h3>
+      <form onSubmit={form.handleSubmit(onSubmit)} className={`${styles.formGrid} ${className ?? ''}`}>
+        <FormItem name="projectName" className={styles.gridSpan2}>
+          <FormLabel>Project Name</FormLabel>
+          <FormControl>
+            <Input
+              value={form.values.projectName}
+              onChange={(e) => form.setValues((p) => ({ ...p, projectName: e.target.value }))}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+
+        <FormItem name="mixDesignId" className={styles.gridSpan2}>
+          <FormLabel>Mix Design ID</FormLabel>
+          <FormControl>
+            <Input
+              value={form.values.mixDesignId}
+              onChange={(e) => form.setValues((p) => ({ ...p, mixDesignId: e.target.value }))}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+
+        <FormItem name="specifiedStrengthPsi">
+          <FormLabel>Specified Strength (PSI)</FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              value={form.values.specifiedStrengthPsi ?? ''}
+              onChange={(e) => form.setValues((p) => ({ ...p, specifiedStrengthPsi: e.target.valueAsNumber }))}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+
+        <FormItem name="slumpInches">
+          <FormLabel>Slump (inches)</FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              step="0.1"
+              value={form.values.slumpInches ?? ''}
+              onChange={(e) => form.setValues((p) => ({ ...p, slumpInches: e.target.value ? e.target.valueAsNumber : null }))}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+
+        <FormItem name="airContentPercent">
+          <FormLabel>Air Content (%)</FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              step="0.1"
+              value={form.values.airContentPercent ?? ''}
+              onChange={(e) => form.setValues((p) => ({ ...p, airContentPercent: e.target.value ? e.target.valueAsNumber : null }))}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+
+        <div className={styles.volumeContainer}>
+          <FormItem name="batchVolume" className={styles.volumeInput}>
+            <FormLabel>Batch Volume</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                step="0.01"
+                value={form.values.batchVolume ?? ''}
+                onChange={(e) => form.setValues((p) => ({ ...p, batchVolume: e.target.value ? e.target.valueAsNumber : null }))}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+          <FormItem name="volumeUnit" className={styles.volumeUnit}>
+            <FormLabel>Unit</FormLabel>
+            <Select
+              value={form.values.volumeUnit ?? ''}
+              onValueChange={(value) => form.setValues((p) => ({ ...p, volumeUnit: value }))}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="cubic_yards">Cubic Yards</SelectItem>
+                <SelectItem value="cubic_meters">Cubic Meters</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        </div>
+
+        <FormItem name="materials" className={styles.gridSpanFull}>
+          <FormLabel>Materials</FormLabel>
+          <FormControl>
+            <Textarea
+              value={form.values.materials ?? ''}
+              onChange={(e) => form.setValues((p) => ({ ...p, materials: e.target.value || null }))}
+              rows={4}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+
+        <FormItem name="notes" className={styles.gridSpanFull}>
+          <FormLabel>Notes</FormLabel>
+          <FormControl>
+            <Textarea
+              value={form.values.notes ?? ''}
+              onChange={(e) => form.setValues((p) => ({ ...p, notes: e.target.value || null }))}
+              rows={3}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+
+        <FormItem name="document" className={styles.gridSpanFull}>
+          <FormLabel>Mix Design Document</FormLabel>
+          <FormControl>
+            <MixDesignUpload
+              value={
+                form.values.document
+                  ? {
+                      file: form.values.document,
+                      fileName: form.values.documentName || '',
+                      ocrText: form.values.ocrText || '',
+                      verified: false, // Verification is handled internally by MixDesignUpload
+                    }
+                  : null
+              }
+              onChange={(data) => {
+                if (data) {
+                  form.setValues((p) => ({
+                    ...p,
+                    document: data.file,
+                    documentName: data.fileName,
+                    ocrText: data.ocrText,
+                  }));
+                } else {
+                  form.setValues((p) => ({
+                    ...p,
+                    document: null,
+                    documentName: null,
+                    ocrText: null,
+                  }));
+                }
+              }}
+              expectedValues={{
+                'Mix Design ID': form.values.mixDesignId,
+                'Specified Strength': form.values.specifiedStrengthPsi
+                  ? `${form.values.specifiedStrengthPsi}\\s*psi`
+                  : '',
+              }}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+
+        <div className={styles.formActions}>
+          {editingMixDesign && (
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+          )}
+          <Button type="submit" disabled={saveMutation.isPending}>
+            {saveMutation.isPending ? 'Saving...' : editingMixDesign ? 'Update Mix Design' : 'Add Mix Design'}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+};

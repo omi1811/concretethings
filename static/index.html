@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Concrete Mix Designs</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <style>
+      body { font-family: var(--font-family-base, Inter, system-ui, Arial, sans-serif); background: var(--background); color: var(--foreground); margin: 0; }
+      .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+      h1 { margin: 0 0 1rem; }
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius, 8px); box-shadow: var(--shadow); padding: 1rem; margin-bottom: 1rem; }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem 1rem; }
+      .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      label { display: block; font-weight: 500; margin-bottom: 0.25rem; }
+      input, select, textarea { width: 100%; padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--surface-foreground); }
+      textarea { resize: vertical; }
+      .row { display: flex; gap: 0.5rem; align-items: center; }
+      .actions { display: flex; gap: 0.5rem; }
+      button { padding: 0.5rem 0.8rem; border-radius: 6px; border: 1px solid var(--border); background: var(--primary); color: #fff; cursor: pointer; }
+      button[disabled] { opacity: 0.6; cursor: not-allowed; }
+      button.secondary { background: transparent; color: var(--foreground); }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid var(--border); padding: 0.5rem; text-align: left; }
+      th { background: var(--sidebar); color: var(--sidebar-foreground); }
+      .muted { color: var(--muted-foreground); }
+      .badge { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 9999px; border: 1px solid var(--border); font-size: 12px; }
+      .right { justify-content: flex-end; }
+      .error { color: var(--error); margin-bottom: 0.5rem; }
+      .success { color: var(--success); margin-bottom: 0.5rem; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h1>Concrete Mix Designs</h1>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div id="user-info" style="text-align: right;">
+            <div style="font-weight: 500;" id="user-name"></div>
+            <div style="font-size: 0.875rem; color: var(--muted-foreground);" id="user-email"></div>
+          </div>
+          <button id="logout-btn" class="secondary" style="padding: 0.4rem 0.8rem;">Logout</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 id="form-title">Add New Mix Design</h3>
+        <div id="alert" class="muted"></div>
+        <form id="mix-form">
+          <input type="hidden" id="id" />
+          <div class="grid">
+            <div>
+              <label for="projectName">Project Name</label>
+              <input id="projectName" required />
+            </div>
+            <div>
+              <label for="mixDesignId">Mix Design ID</label>
+              <input id="mixDesignId" required />
+            </div>
+            <div>
+              <label for="specifiedStrengthPsi">Specified Strength (PSI)</label>
+              <input id="specifiedStrengthPsi" type="number" min="0" value="0" required />
+            </div>
+            <div>
+              <label for="slumpInches">Slump (inches)</label>
+              <input id="slumpInches" type="number" step="0.1" />
+            </div>
+            <div>
+              <label for="airContentPercent">Air Content (%)</label>
+              <input id="airContentPercent" type="number" step="0.1" />
+            </div>
+            <div class="row">
+              <div style="flex: 1">
+                <label for="batchVolume">Batch Volume</label>
+                <input id="batchVolume" type="number" step="0.01" />
+              </div>
+              <div style="width: 180px">
+                <label for="volumeUnit">Unit</label>
+                <select id="volumeUnit">
+                  <option value="">--</option>
+                  <option value="cubic_yards">Cubic Yards</option>
+                  <option value="cubic_meters">Cubic Meters</option>
+                </select>
+              </div>
+            </div>
+            <div style="grid-column: 1 / -1">
+              <label for="materials">Materials</label>
+              <textarea id="materials" rows="3"></textarea>
+            </div>
+            <div style="grid-column: 1 / -1">
+              <label for="notes">Notes</label>
+              <textarea id="notes" rows="3"></textarea>
+            </div>
+            <div style="grid-column: 1 / -1">
+              <label for="document">Mix Design Document (optional)</label>
+              <input type="file" id="document" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+            </div>
+            <div style="grid-column: 1 / -1">
+              <label for="image">Mix Design Image (optional)</label>
+              <input type="file" id="image" accept="image/*" />
+              <div id="image-preview" style="margin-top: 0.5rem; display: none;"></div>
+            </div>
+          </div>
+          <div class="row right" style="margin-top: .75rem;">
+            <button type="button" class="secondary" id="cancel-btn" style="display:none;">Cancel</button>
+            <button type="submit" id="submit-btn">Add Mix Design</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="row" style="justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0">Registered Mix Designs</h3>
+          <div class="row">
+            <input id="search" placeholder="Search by project or ID..." />
+          </div>
+        </div>
+        <div style="overflow-x: auto;">
+          <table id="table">
+            <thead>
+              <tr>
+                <th>Image</th>
+                <th>Project Name</th>
+                <th>Mix Design ID</th>
+                <th>Strength (PSI)</th>
+                <th>Slump (in)</th>
+                <th>Air (%)</th>
+                <th>Volume</th>
+                <th>Document</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/app.js" type="module"></script>
+  </body>
+  </html>
