@@ -1,10 +1,34 @@
-# ProSite – Professional Site Management Platform
+# ConcreteThings – Professional Construction Site Management Platform
 
-A **production-ready** modular platform for professional site management across Construction, Manufacturing, and Industrial sectors with **multi-tenant SaaS architecture**, JWT authentication, and industry-agnostic quality management modules.
+A **production-ready** modular platform for professional construction site management with **multi-tenant SaaS architecture**, JWT authentication, and comprehensive Quality Management System (QMS) for concrete and material testing.
 
-## 🚀 Vision
+## 🚀 Quick Start
 
-ProSite is a comprehensive site management ecosystem that grows with your business. Start with Quality Management, add Inventory Control, expand to Safety Management – all from one unified platform.
+### For Deployment (Production)
+
+**Ready to deploy? Follow these guides:**
+
+1. 📘 **[SUPABASE_MIGRATION_GUIDE.md](./SUPABASE_MIGRATION_GUIDE.md)** - Migrate SQLite data to Supabase Postgres
+2. ✅ **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Deploy to Railway.app, Render, or Docker
+3. 🔍 **[verify_supabase_migration.py](./verify_supabase_migration.py)** - Verify migration success
+
+**Total deployment time: ~20-30 minutes** 🚀
+
+### For Development (Local)
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment
+cp .env.example .env  # Edit with your settings
+
+# Run migrations
+python migrate_db.py
+
+# Start development server
+gunicorn -w 1 -b 0.0.0.0:8001 'server.app:create_app()'
+```
 
 ## ✨ Core Platform Features
 

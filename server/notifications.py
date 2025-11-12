@@ -435,3 +435,147 @@ pip install twilio
 if __name__ == "__main__":
     # Print setup instructions
     print(get_setup_instructions())
+
+
+def send_time_limit_warning(user, notification_data):
+    """
+    Send warning notification when vehicle exceeds allowed time on site
+    
+    Args:
+        user: User object
+        notification_data: dict with vehicleNumber, materialType, hoursOnSite, etc.
+    """
+    try:
+        whatsapp = get_whatsapp_service()
+        
+        message = f"""
+⚠️ *VEHICLE TIME LIMIT EXCEEDED*
+
+Vehicle: {notification_data['vehicleNumber']}
+Material: {notification_data['materialType']}
+Supplier: {notification_data.get('supplierName', 'N/A')}
+
+Entry Time: {notification_data['entryTime']}
+Hours on Site: {notification_data['hoursOnSite']} hours
+Allowed: {notification_data['allowedHours']} hours
+
+⏰ Time exceeded by: {notification_data['hoursOnSite'] - notification_data['allowedHours']:.1f} hours
+
+Please check vehicle status and take necessary action.
+
+- ConcreteThings QMS
+"""
+        
+        # Send WhatsApp if enabled
+        if whatsapp.enabled and user.phone:
+            whatsapp.send_message(user.phone, message.strip())
+        
+        # Send email if enabled
+        if user.email:
+            # TODO: Implement email sending
+            logger.info(f"Would send email to {user.email}")
+        
+        logger.info(f"Time limit warning sent to {user.full_name} for vehicle {notification_data['vehicleNumber']}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error sending time limit warning: {e}")
+        return False
+
+
+def send_test_reminder(user, test_data):
+    """
+    Send reminder notification for pending cube tests
+    
+    Args:
+        user: User object (ProjectAdmin or QualityEngineer)
+        test_data: dict with cubeId, testAge, scheduledDate, etc.
+    """
+    try:
+        whatsapp = get_whatsapp_service()
+        
+        message = f"""
+🔔 *CUBE TEST REMINDER*
+
+Cube ID: {test_data['cubeId']}
+Test Age: {test_data['testAge']} days
+Scheduled Date: {test_data['scheduledDate']}
+
+Batch: {test_data.get('batchNumber', 'N/A')}
+Grade: {test_data.get('grade', 'N/A')}
+Location: {test_data.get('location', 'N/A')}
+
+Status: ⏳ PENDING
+⚠️ Test must be performed today!
+
+Please complete the test and record results in the system.
+
+- ConcreteThings QMS
+"""
+        
+        # Send WhatsApp if enabled
+        if whatsapp.enabled and user.phone:
+            whatsapp.send_message(user.phone, message.strip())
+        
+        # Send email if enabled
+        if user.email:
+            # TODO: Implement email sending
+            logger.info(f"Would send email to {user.email}")
+        
+        logger.info(f"Test reminder sent to {user.full_name} for cube {test_data['cubeId']}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error sending test reminder: {e}")
+        return False
+
+
+def send_missed_test_warning(admin, warning_data):
+    """
+    Send warning to project admin when tests are missed
+    
+    Args:
+        admin: User object (ProjectAdmin)
+        warning_data: dict with missedTests list, projectName, etc.
+    """
+    try:
+        whatsapp = get_whatsapp_service()
+        
+        missed_count = len(warning_data['missedTests'])
+        tests_list = "\n".join([
+            f"  • Cube {t['cubeId']} - {t['testAge']} days (Due: {t['scheduledDate']})"
+            for t in warning_data['missedTests'][:5]  # Show first 5
+        ])
+        
+        message = f"""
+❌ *MISSED TESTS WARNING*
+
+Project: {warning_data['projectName']}
+Date: {datetime.now().strftime('%Y-%m-%d')}
+
+{missed_count} test(s) were not performed on scheduled date:
+
+{tests_list}
+{'  ... and more' if missed_count > 5 else ''}
+
+⚠️ Please review and take necessary action.
+Delayed testing may affect quality records and compliance.
+
+- ConcreteThings QMS
+"""
+        
+        # Send WhatsApp if enabled
+        if whatsapp.enabled and admin.phone:
+            whatsapp.send_message(admin.phone, message.strip())
+        
+        # Send email if enabled
+        if admin.email:
+            # TODO: Implement email sending
+            logger.info(f"Would send email to {admin.email}")
+        
+        logger.info(f"Missed test warning sent to {admin.full_name} for {missed_count} tests")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error sending missed test warning: {e}")
+        return False

@@ -7,9 +7,26 @@ from sqlalchemy import DateTime, Float, Integer, String, Text, LargeBinary, Fore
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 try:
-    from .db import Base
+    from .db import Base, SessionLocal
 except ImportError:
-    from db import Base
+    from db import Base, SessionLocal
+
+
+# Database session wrapper for backward compatibility with Flask-SQLAlchemy style code
+class _DBWrapper:
+    """
+    Wrapper to provide db.session compatibility for legacy code.
+    New code should use session_scope() context manager instead.
+    
+    This uses SQLAlchemy's scoped_session which is thread-local and request-safe.
+    """
+    @property
+    def session(self):
+        """Returns the scoped session (thread-local, auto-managed by SQLAlchemy)."""
+        return SessionLocal
+
+# Create a global db instance for backward compatibility
+db = _DBWrapper()
 
 
 class Company(Base):
@@ -194,6 +211,7 @@ class ProjectMembership(Base):
     # - QualityEngineer: Perform tests, enter data, upload photos
     # - SiteEngineer: View data, enter batch info, limited editing
     # - DataEntry: Basic data entry only
+    # - Watchman: Material vehicle register ONLY, no other features
     # - Viewer: Read-only access
     # - RMCVendor: View own batches only
     
@@ -389,6 +407,85 @@ class MixDesign(Base):
         }
 
 
+class PourActivity(Base):
+    """
+    Pour Activity/Concrete Pour Register - Groups multiple batches for a single concrete pour.
+    Represents one pouring activity (e.g., "Slab on Grid A-12, Level 5").
+    Multiple vehicles/batches can be linked to one pour activity.
+    """
+    __tablename__ = "pour_activities"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id"), nullable=False)
+    
+    # Pour Identification
+    pour_id: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)  # e.g., POUR-2025-001
+    pour_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    
+    # Location Details (where concrete is poured)
+    building_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    floor_level: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    zone: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    grid_reference: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    structural_element_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Beam/Column/Slab/Footing/Wall
+    element_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    location_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Concrete Details
+    concrete_type: Mapped[str] = mapped_column(String(20), default="Normal")  # Normal or PT (Post-Tensioned)
+    design_grade: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # e.g., M30, M40
+    total_quantity_planned: Mapped[float] = mapped_column(Float, nullable=False)  # Total m³ planned
+    total_quantity_received: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # Actual total from batches
+    
+    # Pour Status
+    status: Mapped[str] = mapped_column(String(20), default="in_progress")  # in_progress/completed/cancelled
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+    # Workflow
+    created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    completed_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    # Remarks
+    remarks: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    project = relationship("Project", backref="pour_activities")
+    batches = relationship("BatchRegister", back_populates="pour_activity")
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "projectId": self.project_id,
+            "pourId": self.pour_id,
+            "pourDate": self.pour_date.isoformat(),
+            "location": {
+                "buildingName": self.building_name,
+                "floorLevel": self.floor_level,
+                "zone": self.zone,
+                "gridReference": self.grid_reference,
+                "structuralElementType": self.structural_element_type,
+                "elementId": self.element_id,
+                "description": self.location_description
+            },
+            "concreteType": self.concrete_type,
+            "designGrade": self.design_grade,
+            "totalQuantityPlanned": self.total_quantity_planned,
+            "totalQuantityReceived": self.total_quantity_received,
+            "status": self.status,
+            "startedAt": self.started_at.isoformat() if self.started_at else None,
+            "completedAt": self.completed_at.isoformat() if self.completed_at else None,
+            "createdBy": self.created_by,
+            "completedBy": self.completed_by,
+            "remarks": self.remarks,
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat(),
+        }
+
+
 class BatchRegister(Base):
     """
     Batch/Delivery Register - Records RMC deliveries with mandatory batch sheet photo.
@@ -400,6 +497,9 @@ class BatchRegister(Base):
     project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id"), nullable=False)
     mix_design_id: Mapped[int] = mapped_column(Integer, ForeignKey("mix_designs.id"), nullable=False)
     rmc_vendor_id: Mapped[int] = mapped_column(Integer, ForeignKey("rmc_vendors.id"), nullable=False)
+    
+    # Link to Pour Activity (optional - batch can be standalone or part of a pour)
+    pour_activity_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("pour_activities.id"), nullable=True)
     
     # Batch Details
     batch_number: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
@@ -454,6 +554,7 @@ class BatchRegister(Base):
     project = relationship("Project", backref="batch_registers")
     mix_design = relationship("MixDesign", backref="batch_registers")
     rmc_vendor = relationship("RMCVendor", backref="batch_registers")
+    pour_activity = relationship("PourActivity", back_populates="batches")
 
     def to_dict(self) -> dict:
         return {
@@ -461,6 +562,7 @@ class BatchRegister(Base):
             "projectId": self.project_id,
             "mixDesignId": self.mix_design_id,
             "rmcVendorId": self.rmc_vendor_id,
+            "pourActivityId": self.pour_activity_id,
             "batchNumber": self.batch_number,
             "deliveryDate": self.delivery_date.isoformat(),
             "deliveryTime": self.delivery_time,
@@ -509,8 +611,11 @@ class CubeTestRegister(Base):
     
     # Test Set Identification
     set_number: Mapped[int] = mapped_column(Integer, nullable=False)  # Sequential per batch
-    test_age_days: Mapped[int] = mapped_column(Integer, nullable=False)  # 7, 28, 56, 90
+    test_age_days: Mapped[int] = mapped_column(Integer, nullable=False)  # 3, 5, 7, 28, 56, 90 (5 for PT concrete)
     cube_identifier: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # 'A', 'B', 'C' for individual cubes in a set
+    
+    # Link to Pour Activity (if batch is part of a pour)
+    pour_activity_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("pour_activities.id"), nullable=True)
     
     # Third-party Testing Assignment
     third_party_lab_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("third_party_labs.id"), nullable=True)
@@ -528,6 +633,7 @@ class CubeTestRegister(Base):
     
     # ISO 6784-1:2013 - Concrete Grade and Type
     concrete_grade: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # M20, M30, M40FF (Free Flow)
+    concrete_type: Mapped[str] = mapped_column(String(20), default="Normal")  # Normal or PT (Post-Tensioned)
     concrete_source: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # 'RMC' or 'Site Mix'
     
     # ISO 1920-3:2019 - Sample Details
@@ -606,6 +712,7 @@ class CubeTestRegister(Base):
     # Relationships
     batch_register = relationship("BatchRegister", backref="cube_tests")
     project = relationship("Project", backref="cube_tests")
+    pour_activity = relationship("PourActivity", backref="cube_tests")
 
     def calculate_results(self):
         """Auto-calculate average strength and pass/fail status."""
@@ -643,6 +750,7 @@ class CubeTestRegister(Base):
             "setNumber": self.set_number,
             "testAgeDays": self.test_age_days,
             "cubeIdentifier": self.cube_identifier,
+            "pourActivityId": self.pour_activity_id,
             "thirdPartyLabId": self.third_party_lab_id,
             "sentToLabDate": self.sent_to_lab_date.isoformat() if self.sent_to_lab_date else None,
             "expectedResultDate": self.expected_result_date.isoformat() if self.expected_result_date else None,
@@ -654,6 +762,7 @@ class CubeTestRegister(Base):
             "structureType": self.structure_type,
             "structureLocation": self.structure_location,
             "concreteGrade": self.concrete_grade,
+            "concreteType": self.concrete_type,
             "concreteSource": self.concrete_source,
             "numberOfCubes": self.number_of_cubes,
             "sampleIdentification": self.sample_identification,
@@ -1282,6 +1391,155 @@ class TestReminder(Base):
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat()
         }
+
+
+class MaterialVehicleRegister(Base):
+    """
+    Material Vehicle Register - For watchmen/security to log all material vehicles.
+    Separate from RMC batches, includes photos (MTC, vehicle, etc.)
+    """
+    __tablename__ = "material_vehicle_register"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id"), nullable=False)
+    
+    # Vehicle Entry Details
+    vehicle_number: Mapped[str] = mapped_column(String(50), nullable=False)
+    vehicle_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # RMC Truck, TMT Truck, etc.
+    
+    # Material Details
+    material_type: Mapped[str] = mapped_column(String(100), nullable=False)  # Concrete, Steel, Cement, Sand, etc.
+    supplier_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    challan_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    
+    # Driver Details
+    driver_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    driver_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    driver_license: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    
+    # Entry/Exit Times
+    entry_time: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    exit_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    duration_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # Calculated
+    
+    # Time Limit Check
+    allowed_time_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # From project settings
+    exceeded_time_limit: Mapped[bool] = mapped_column(Integer, default=0)
+    time_warning_sent: Mapped[bool] = mapped_column(Integer, default=0)
+    time_warning_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+    # Photos - JSON array of photo URLs
+    photos: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON: [{"type": "MTC", "url": "..."}, ...]
+    
+    # Status
+    status: Mapped[str] = mapped_column(String(50), default="on_site")  # on_site, exited
+    purpose: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # Delivery, Loading, etc.
+    remarks: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Linkage to RMC Batch (if applicable)
+    linked_batch_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("batch_registers.id"), nullable=True)
+    is_linked_to_batch: Mapped[bool] = mapped_column(Integer, default=0)
+    
+    # Metadata
+    created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)  # Watchman
+    updated_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = relationship("Project", backref="vehicle_entries")
+    creator = relationship("User", foreign_keys=[created_by], backref="created_vehicle_entries")
+    
+    def to_dict(self) -> dict:
+        import json
+        photos_list = []
+        if self.photos:
+            try:
+                photos_list = json.loads(self.photos)
+            except:
+                photos_list = []
+        
+        return {
+            "id": self.id,
+            "projectId": self.project_id,
+            "vehicleNumber": self.vehicle_number,
+            "vehicleType": self.vehicle_type,
+            "materialType": self.material_type,
+            "supplierName": self.supplier_name,
+            "challanNumber": self.challan_number,
+            "driverName": self.driver_name,
+            "driverPhone": self.driver_phone,
+            "driverLicense": self.driver_license,
+            "entryTime": self.entry_time.isoformat(),
+            "exitTime": self.exit_time.isoformat() if self.exit_time else None,
+            "durationHours": self.duration_hours,
+            "allowedTimeHours": self.allowed_time_hours,
+            "exceededTimeLimit": bool(self.exceeded_time_limit),
+            "timeWarningSent": bool(self.time_warning_sent),
+            "timeWarningSentAt": self.time_warning_sent_at.isoformat() if self.time_warning_sent_at else None,
+            "photos": photos_list,
+            "status": self.status,
+            "purpose": self.purpose,
+            "remarks": self.remarks,
+            "linkedBatchId": self.linked_batch_id,
+            "isLinkedToBatch": bool(self.is_linked_to_batch),
+            "createdBy": self.created_by,
+            "updatedBy": self.updated_by,
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat()
+        }
+
+
+class ProjectSettings(Base):
+    """
+    Project-specific settings and configurations
+    """
+    __tablename__ = "project_settings"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id"), nullable=False, unique=True)
+    
+    # Material Vehicle Register Settings
+    enable_material_vehicle_addon: Mapped[bool] = mapped_column(Integer, default=0)  # C1 vs C2 company type
+    vehicle_allowed_time_hours: Mapped[float] = mapped_column(Float, default=3.0)  # Default 3 hours
+    send_time_warnings: Mapped[bool] = mapped_column(Integer, default=1)
+    
+    # Notification Settings
+    enable_test_reminders: Mapped[bool] = mapped_column(Integer, default=1)
+    reminder_time: Mapped[str] = mapped_column(String(10), default="09:00")  # Daily reminder time
+    notify_project_admins: Mapped[bool] = mapped_column(Integer, default=1)
+    notify_quality_engineers: Mapped[bool] = mapped_column(Integer, default=1)
+    
+    # WhatsApp Notification Settings
+    enable_whatsapp_notifications: Mapped[bool] = mapped_column(Integer, default=0)
+    enable_email_notifications: Mapped[bool] = mapped_column(Integer, default=1)
+    
+    # Metadata
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    # Relationships
+    project = relationship("Project", backref="settings")
+    
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "projectId": self.project_id,
+            "enableMaterialVehicleAddon": bool(self.enable_material_vehicle_addon),
+            "vehicleAllowedTimeHours": self.vehicle_allowed_time_hours,
+            "sendTimeWarnings": bool(self.send_time_warnings),
+            "enableTestReminders": bool(self.enable_test_reminders),
+            "reminderTime": self.reminder_time,
+            "notifyProjectAdmins": bool(self.notify_project_admins),
+            "notifyQualityEngineers": bool(self.notify_quality_engineers),
+            "enableWhatsappNotifications": bool(self.enable_whatsapp_notifications),
+            "enableEmailNotifications": bool(self.enable_email_notifications),
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat(),
+            "updatedBy": self.updated_by
+        }
+
 
 
 

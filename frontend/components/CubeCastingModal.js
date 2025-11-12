@@ -9,22 +9,31 @@ import { Calendar, Beaker, Building2, Clock, CheckCircle2 } from 'lucide-react';
 /**
  * Cube Casting Modal
  * 
- * Shown after batch entry is saved. Allows user to specify:
- * - Which test ages to create (3, 7, 28, 56 days)
+ * Shown after batch entry or pour activity completion. Allows user to specify:
+ * - Which test ages to create (3/5, 7, 28, 56 days) - PT concrete uses 5 days instead of 3
  * - Number of sets per age
  * - Third-party lab assignments
  * - Curing details
  * 
+ * Supports both individual batches and pour activities (batch consolidation).
  * Automatically calculates test dates and creates reminder schedule.
  */
 export default function CubeCastingModal({ 
   isOpen, 
   onClose, 
   batchData,
+  pourActivity,  // NEW: Pour activity data (for batch consolidation)
+  projectId,
   onSubmit,
   labs = []
 }) {
-  const [selectedAges, setSelectedAges] = useState([7, 28]);
+  // Determine if this is PT concrete (from pour activity or batch)
+  const concreteType = pourActivity?.concreteType || batchData?.concreteType || 'Normal';
+  const isPTConcrete = concreteType === 'PT';
+  
+  // Default test ages based on concrete type
+  const defaultAges = isPTConcrete ? [7, 28] : [7, 28];
+  const [selectedAges, setSelectedAges] = useState(defaultAges);
   const [setsPerAge, setSetsPerAge] = useState(1);
   const [thirdPartyAssignments, setThirdPartyAssignments] = useState({});
   const [curingMethod, setCuringMethod] = useState('Water');
@@ -33,7 +42,13 @@ export default function CubeCastingModal({
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const testAgeOptions = [
+  // Test age options - dynamically change based on concrete type
+  const testAgeOptions = isPTConcrete ? [
+    { days: 5, label: '5 Days', description: 'PT concrete strength check' },
+    { days: 7, label: '7 Days', description: 'Week strength' },
+    { days: 28, label: '28 Days', description: 'Design strength (Standard)' },
+    { days: 56, label: '56 Days', description: 'Long-term strength' }
+  ] : [
     { days: 3, label: '3 Days', description: 'Early strength check' },
     { days: 7, label: '7 Days', description: 'Week strength' },
     { days: 28, label: '28 Days', description: 'Design strength (Standard)' },
@@ -50,15 +65,15 @@ export default function CubeCastingModal({
       const minutes = String(now.getMinutes()).padStart(2, '0');
       setCastingTime(`${hours}:${minutes}`);
       
-      // Reset to defaults
-      setSelectedAges([7, 28]);
+      // Reset to defaults based on concrete type
+      setSelectedAges(defaultAges);
       setSetsPerAge(1);
       setThirdPartyAssignments({});
       setCuringMethod('Water');
       setCuringTemperature(23);
       setShowPreview(false);
     }
-  }, [isOpen]);
+  }, [isOpen, isPTConcrete]);
 
   const toggleTestAge = (days) => {
     setSelectedAges(prev => 
@@ -76,8 +91,12 @@ export default function CubeCastingModal({
   };
 
   const calculateTestDate = (days) => {
-    if (!batchData?.deliveryDate) return 'N/A';
-    const castingDate = new Date(batchData.deliveryDate);
+    const castingDate = pourActivity 
+      ? new Date(pourActivity.pourDate) 
+      : (batchData?.deliveryDate ? new Date(batchData.deliveryDate) : null);
+    
+    if (!castingDate) return 'N/A';
+    
     const testDate = new Date(castingDate);
     testDate.setDate(testDate.getDate() + days);
     return testDate.toLocaleDateString('en-IN', { 
@@ -105,9 +124,7 @@ export default function CubeCastingModal({
     
     try {
       const data = {
-        batch_id: batchData.batchId,
-        project_id: batchData.projectId || parseInt(new URLSearchParams(window.location.search).get('project_id')),
-        casting_date: batchData.deliveryDate,
+        project_id: projectId || batchData?.projectId || parseInt(new URLSearchParams(window.location.search).get('project_id')),
         casting_time: castingTime,
         test_ages: selectedAges,
         number_of_sets_per_age: setsPerAge,
@@ -115,8 +132,18 @@ export default function CubeCastingModal({
           Object.entries(thirdPartyAssignments).filter(([_, v]) => v)
         ),
         curing_method: curingMethod,
-        curing_temperature: parseFloat(curingTemperature)
+        curing_temperature: parseFloat(curingTemperature),
+        concrete_type: concreteType
       };
+
+      // Add pour activity or batch reference
+      if (pourActivity) {
+        data.pour_activity_id = pourActivity.id;
+        data.casting_date = pourActivity.pourDate;
+      } else if (batchData) {
+        data.batch_id = batchData.batchId;
+        data.casting_date = batchData.deliveryDate;
+      }
 
       await onSubmit(data);
       onClose();
@@ -128,7 +155,7 @@ export default function CubeCastingModal({
     }
   };
 
-  if (!batchData) return null;
+  if (!batchData && !pourActivity) return null;
 
   return (
     <Modal
@@ -138,46 +165,97 @@ export default function CubeCastingModal({
       size="large"
     >
       <div className="space-y-6">
-        {/* Batch Summary */}
+        {/* Batch/Pour Activity Summary */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <Building2 className="w-5 h-5 text-blue-600 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">Batch Details</h3>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="text-gray-600">Batch:</span>
-                  <span className="ml-2 font-medium text-gray-900">{batchData.batchNumber}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Date:</span>
-                  <span className="ml-2 font-medium text-gray-900">
-                    {new Date(batchData.deliveryDate).toLocaleDateString('en-IN')}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Quantity:</span>
-                  <span className="ml-2 font-medium text-gray-900">
-                    {batchData.quantityReceived || batchData.quantityOrdered} m³
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Location:</span>
-                  <span className="ml-2 font-medium text-gray-900">
-                    {batchData.location?.elementId || 'N/A'}
-                  </span>
-                </div>
-              </div>
-              
-              {batchData.recommendations && (
-                <div className="mt-3 pt-3 border-t border-blue-200">
-                  <p className="text-sm text-blue-900">
-                    💡 <strong>Recommended:</strong> {batchData.recommendations.recommendedSets} sets
-                    <span className="text-blue-700 ml-1">
-                      ({batchData.recommendations.reason})
-                    </span>
-                  </p>
-                </div>
+              {pourActivity ? (
+                // Pour Activity Mode
+                <>
+                  <h3 className="font-semibold text-gray-900 mb-2">Pour Activity Details</h3>
+                  <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                    <div>
+                      <span className="text-gray-600">Pour ID:</span>
+                      <span className="ml-2 font-medium text-gray-900">{pourActivity.pourId}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Grade:</span>
+                      <span className="ml-2 font-medium text-gray-900">{pourActivity.designGrade}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Location:</span>
+                      <span className="ml-2 font-medium text-gray-900">{pourActivity.location?.gridReference}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Total Quantity:</span>
+                      <span className="ml-2 font-medium text-gray-900">{pourActivity.totalQuantityReceived || pourActivity.totalQuantityPlanned} m³</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-gray-600">Concrete Type:</span>
+                      <span className="ml-2 font-medium text-gray-900">
+                        {isPTConcrete ? '🔧 Post-Tensioned (PT)' : '🏗️ Normal'}
+                      </span>
+                    </div>
+                  </div>
+                  {isPTConcrete && (
+                    <div className="bg-purple-100 border border-purple-300 rounded p-2 text-xs text-purple-800">
+                      ℹ️ <strong>PT Concrete:</strong> Testing will be performed at 5 days (instead of 3 days for normal concrete)
+                    </div>
+                  )}
+                  {pourActivity.batches && pourActivity.batches.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-blue-300">
+                      <p className="text-xs text-gray-600 mb-1"><strong>Linked Batches ({pourActivity.batches.length}):</strong></p>
+                      <div className="space-y-1">
+                        {pourActivity.batches.map((batch, idx) => (
+                          <div key={batch.id} className="text-xs text-gray-700">
+                            • Batch {idx + 1}: {batch.vehicleNumber} - {batch.quantityReceived}m³
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                // Single Batch Mode
+                <>
+                  <h3 className="font-semibold text-gray-900 mb-2">Batch Details</h3>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-gray-600">Batch:</span>
+                      <span className="ml-2 font-medium text-gray-900">{batchData.batchNumber}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Date:</span>
+                      <span className="ml-2 font-medium text-gray-900">
+                        {new Date(batchData.deliveryDate).toLocaleDateString('en-IN')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Quantity:</span>
+                      <span className="ml-2 font-medium text-gray-900">
+                        {batchData.quantityReceived || batchData.quantityOrdered} m³
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Location:</span>
+                      <span className="ml-2 font-medium text-gray-900">
+                        {batchData.location?.elementId || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {batchData.recommendations && (
+                    <div className="mt-3 pt-3 border-t border-blue-200">
+                      <p className="text-sm text-blue-900">
+                        💡 <strong>Recommended:</strong> {batchData.recommendations.recommendedSets} sets
+                        <span className="text-blue-700 ml-1">
+                          ({batchData.recommendations.reason})
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

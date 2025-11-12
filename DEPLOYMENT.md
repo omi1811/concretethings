@@ -6,6 +6,22 @@ This guide covers deploying your Mix Design Management application for commercia
 
 ---
 
+## 🎯 Quick Start Guides
+
+**For immediate deployment, see these focused guides:**
+
+- 📘 **[SUPABASE_MIGRATION_GUIDE.md](./SUPABASE_MIGRATION_GUIDE.md)** - Step-by-step SQLite to Supabase migration
+- ✅ **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Complete deployment checklist with platform options
+- 🔍 **[verify_supabase_migration.py](./verify_supabase_migration.py)** - Automated verification script
+
+**Recommended deployment path:**
+1. Execute SQL scripts in Supabase (see SUPABASE_MIGRATION_GUIDE.md)
+2. Deploy to Railway.app or Render.com (see DEPLOYMENT_CHECKLIST.md)
+3. Configure Supabase Storage for uploads
+4. Total time: ~20-30 minutes 🚀
+
+---
+
 ## 📊 Database Options for Commercial Use
 
 ### **Recommended: PostgreSQL** ⭐ (Best for Images + Structured Data)

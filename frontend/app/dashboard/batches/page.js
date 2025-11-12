@@ -47,12 +47,24 @@ export default function BatchesPage() {
           <h1 className="text-3xl font-bold text-gray-900">Batch Register</h1>
           <p className="text-gray-600 mt-1">Manage concrete batch deliveries</p>
         </div>
-        <Link href="/dashboard/batches/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            New Batch
-          </Button>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/dashboard/batches/quick-entry">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Quick Entry
+            </Button>
+          </Link>
+          <Link href="/dashboard/batches/import">
+            <Button variant="outline">
+              Import
+            </Button>
+          </Link>
+          <Link href="/dashboard/batches/new">
+            <Button variant="outline">
+              Full Form
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search and Filter */}

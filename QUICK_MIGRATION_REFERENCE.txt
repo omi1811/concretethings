@@ -1,0 +1,154 @@
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                         │
+│   🚀 SUPABASE MIGRATION - QUICK REFERENCE                               │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+📍 START HERE:
+   └─ Open: SUPABASE_MIGRATION_GUIDE.md (complete walkthrough)
+
+═══════════════════════════════════════════════════════════════════════════
+
+⚡ FAST TRACK (10 minutes)
+
+1️⃣  Go to Supabase SQL Editor
+    → https://supabase.com/dashboard
+    → Project: lsqvxfaonbvqvlwrhsby
+
+2️⃣  Run Schema Migration
+    → New query
+    → Copy/paste: supabase_migration.sql
+    → Execute
+    → ✓ Should see: "Migration base schema created successfully!"
+
+3️⃣  Run Data Migration
+    → New query
+    → Copy/paste: supabase_data_inserts.sql
+    → Execute
+    → ✓ Should see row count summary
+
+4️⃣  Verify Migration
+    → Run: SELECT COUNT(*) FROM users;  -- Should return 1
+    → Run: SELECT COUNT(*) FROM projects;  -- Should return 1
+    → Run: SELECT COUNT(*) FROM material_vehicle_register;  -- Should return 2
+
+═══════════════════════════════════════════════════════════════════════════
+
+🚢 DEPLOY (Choose One)
+
+Option A: Railway.app (Easiest)  ⭐
+  1. Push code to GitHub
+  2. https://railway.app → New Project → Deploy from GitHub
+  3. Add env vars: DATABASE_URL, JWT_SECRET_KEY
+  4. Done! (~5 min)
+
+Option B: Render.com
+  1. Push code to GitHub
+  2. https://render.com → New Web Service
+  3. Build: pip install -r requirements.txt
+  4. Start: gunicorn -w 2 -b 0.0.0.0:$PORT 'server.app:create_app()'
+  5. Add env vars
+  6. Deploy! (~10 min)
+
+Option C: Docker (Local/VPS)
+  docker build -t concretethings .
+  docker run -p 8001:8001 \
+    -e DATABASE_URL="postgresql://..." \
+    -e JWT_SECRET_KEY="..." \
+    concretethings
+
+═══════════════════════════════════════════════════════════════════════════
+
+📁 FILES CREATED
+
+Migration:
+  ✓ supabase_migration.sql        (17K) - Schema DDL
+  ✓ supabase_data_inserts.sql     (6.4K) - Data inserts
+  ✓ data.sqlite3.backup-*         (164K) - Your backup
+
+Documentation:
+  ✓ SUPABASE_MIGRATION_GUIDE.md   (6.5K) - Complete guide
+  ✓ DEPLOYMENT_CHECKLIST.md       (6.4K) - Deploy checklist
+  ✓ MIGRATION_SUMMARY.md          (8.2K) - This summary
+  
+Tools:
+  ✓ verify_supabase_migration.py  (5.6K) - Verification script
+
+═══════════════════════════════════════════════════════════════════════════
+
+🔒 ENVIRONMENT VARIABLES (Required)
+
+DATABASE_URL=postgresql://postgres:March%402024@db.lsqvxfaonbvqvlwrhsby.supabase.co:5432/postgres
+JWT_SECRET_KEY=<generate-new-secret-in-production>
+FLASK_ENV=production
+
+Generate new JWT secret:
+  python -c "import secrets; print(secrets.token_hex(32))"
+
+═══════════════════════════════════════════════════════════════════════════
+
+✅ VERIFICATION CHECKLIST
+
+After migration:
+  □ 18 tables exist in Supabase
+  □ 1 company, 1 user, 1 project in database
+  □ Foreign keys work (user → company)
+  □ Sequences set correctly
+
+After deployment:
+  □ Health endpoint works: curl https://your-app.com/health
+  □ Login works: curl -X POST https://your-app.com/auth/login
+  □ API returns data with JWT token
+
+═══════════════════════════════════════════════════════════════════════════
+
+⚠️  KNOWN ISSUES
+
+Codespaces Network:
+  ✗ Cannot connect directly to Supabase from Codespaces (IPv6 blocked)
+  ✓ Use SQL Editor in browser (works!)
+  ✓ Or deploy to Railway/Render (works!)
+
+═══════════════════════════════════════════════════════════════════════════
+
+💰 COSTS
+
+Development (Free):
+  • Supabase free tier: 500MB DB, 1GB storage
+  • Railway free tier: 500 hours/month
+  • Total: $0/month
+
+Production (Starter):
+  • Supabase Pro: $25/month
+  • Railway/Render: $7-10/month
+  • Total: ~$35/month
+
+═══════════════════════════════════════════════════════════════════════════
+
+🆘 HELP
+
+Stuck? Check:
+  1. SUPABASE_MIGRATION_GUIDE.md - Detailed steps
+  2. DEPLOYMENT_CHECKLIST.md - Platform-specific help
+  3. MIGRATION_SUMMARY.md - Full context
+
+Errors?
+  • "table exists" → OK! Safe to ignore
+  • "foreign key violation" → Run schema BEFORE data
+  • "network unreachable" → Use Supabase web interface
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 TOTAL TIME
+
+Migration execution:     10 minutes
+Deploy to Railway:       10 minutes
+Verification:            5 minutes
+────────────────────────────────────
+TOTAL:                   25 minutes  🚀
+
+═══════════════════════════════════════════════════════════════════════════
+
+Last updated: November 12, 2025
+Your current DB: data.sqlite3 (backed up ✓)
+Target DB: lsqvxfaonbvqvlwrhsby.supabase.co

@@ -25,6 +25,12 @@ from .material_management import material_management_bp
 from .material_tests import material_tests_bp
 from .training_register import training_register_bp
 from .support_admin import support_bp
+from .pour_activities import pour_activities_bp
+from .batch_import import batch_import_bp
+from .material_vehicle_register import material_vehicle_bp
+from .project_settings import project_settings_bp
+from .background_jobs import background_jobs_bp
+from .bulk_entry import bulk_entry_bp
 # TODO: Handover register needs database migration before enabling
 # from .handover_register import handover_bp
 
@@ -93,6 +99,24 @@ def create_app() -> Flask:
     # Register support admin blueprint
     app.register_blueprint(support_bp)
     
+    # Register pour activity blueprint (batch consolidation)
+    app.register_blueprint(pour_activities_bp)
+    
+    # Register batch import blueprint (for sites where security manages vehicle entry)
+    app.register_blueprint(batch_import_bp)
+    
+    # Register material vehicle register blueprint (for watchmen/security)
+    app.register_blueprint(material_vehicle_bp)
+    
+    # Register bulk entry blueprint (quality engineer bulk batch creation from vehicles)
+    app.register_blueprint(bulk_entry_bp)
+    
+    # Register project settings blueprint
+    app.register_blueprint(project_settings_bp)
+    
+    # Register background jobs blueprint (time limits, test reminders)
+    app.register_blueprint(background_jobs_bp)
+    
     # TODO: Register handover register blueprint after database migration
     # app.register_blueprint(handover_bp)
     
@@ -112,6 +136,13 @@ def create_app() -> Flask:
         response.headers['X-Frame-Options'] = 'SAMEORIGIN'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         return response
+    
+    # Database session cleanup
+    @app.teardown_appcontext
+    def shutdown_session(exception=None):
+        """Remove database sessions at the end of the request or when the application shuts down."""
+        from .db import SessionLocal
+        SessionLocal.remove()
     
     # Error handlers
     @app.errorhandler(404)

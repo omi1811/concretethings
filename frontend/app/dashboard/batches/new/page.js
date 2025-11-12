@@ -1,20 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Upload, Camera } from 'lucide-react';
+import { ArrowLeft, Upload, Camera, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
-import { batchAPI, cubeTestAPI, labAPI } from '@/lib/api';
+import { batchAPI, cubeTestAPI, labAPI, pourActivityAPI } from '@/lib/api';
 import CubeCastingModal from '@/components/CubeCastingModal';
 
 export default function NewBatchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectId = searchParams.get('project_id');
+  const pourIdFromQuery = searchParams.get('pourId');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,6 +23,8 @@ export default function NewBatchPage() {
   const [showCubeCastingModal, setShowCubeCastingModal] = useState(false);
   const [batchSummary, setBatchSummary] = useState(null);
   const [labs, setLabs] = useState([]);
+  const [pourActivities, setPourActivities] = useState([]);
+  const [selectedPour, setSelectedPour] = useState(null);
   
   const [formData, setFormData] = useState({
     batchNumber: '',
@@ -36,8 +39,70 @@ export default function NewBatchPage() {
     vehicleNumber: '',
     driverName: '',
     location: '',
-    remarks: ''
+    remarks: '',
+    pourActivityId: pourIdFromQuery || ''
   });
+
+  useEffect(() => {
+    if (projectId) {
+      loadPourActivities();
+    }
+    if (pourIdFromQuery) {
+      loadPourActivity(pourIdFromQuery);
+    }
+  }, [projectId, pourIdFromQuery]);
+
+  async function loadPourActivities() {
+    try {
+      const result = await pourActivityAPI.getAll({
+        projectId,
+        status: 'in_progress'
+      });
+      if (result.success) {
+        setPourActivities(result.data.pourActivities || []);
+      }
+    } catch (error) {
+      console.error('Error loading pour activities:', error);
+    }
+  }
+
+  async function loadPourActivity(pourId) {
+    try {
+      const result = await pourActivityAPI.getById(pourId);
+      if (result.success) {
+        const pour = result.data.pourActivity;
+        setSelectedPour(pour);
+        // Auto-populate fields from pour activity
+        setFormData(prev => ({
+          ...prev,
+          grade: pour.designGrade || prev.grade,
+          location: pour.location?.description || prev.location
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading pour activity:', error);
+    }
+  }
+
+  const handlePourChange = (e) => {
+    const pourId = e.target.value;
+    setFormData(prev => ({ ...prev, pourActivityId: pourId }));
+    
+    if (pourId) {
+      const pour = pourActivities.find(p => p.id === parseInt(pourId));
+      if (pour) {
+        setSelectedPour(pour);
+        // Auto-populate fields
+        setFormData(prev => ({
+          ...prev,
+          grade: pour.designGrade || prev.grade,
+          location: pour.location?.description || prev.location
+        }));
+      }
+    } else {
+      setSelectedPour(null);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -149,6 +214,66 @@ export default function NewBatchPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Pour Activity Linking (NEW) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Layers className="w-5 h-5" />
+              Link to Pour Activity (Optional)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-blue-800">
+                💡 <strong>Tip:</strong> If this batch is part of a larger pour (e.g., multiple vehicles for one slab),
+                link it to a pour activity. This groups batches together for single cube test sets.
+              </p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select Pour Activity
+              </label>
+              <select
+                value={formData.pourActivityId}
+                onChange={handlePourChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Standalone Batch (No Pour Activity)</option>
+                {pourActivities.map(pour => (
+                  <option key={pour.id} value={pour.id}>
+                    {pour.pourId} - {pour.location?.gridReference} ({pour.designGrade}, {pour.totalQuantityPlanned}m³)
+                  </option>
+                ))}
+              </select>
+              
+              {pourActivities.length === 0 && (
+                <p className="mt-2 text-sm text-gray-500">
+                  No active pour activities. <Link href="/dashboard/pour-activities/new" className="text-blue-600 hover:underline">Create one</Link> to group batches.
+                </p>
+              )}
+            </div>
+            
+            {selectedPour && (
+              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <h4 className="font-semibold text-green-900 mb-2">Linked to Pour Activity</h4>
+                <div className="text-sm text-green-800 space-y-1">
+                  <p><strong>Pour ID:</strong> {selectedPour.pourId}</p>
+                  <p><strong>Location:</strong> {selectedPour.location?.description}</p>
+                  <p><strong>Concrete Type:</strong> {selectedPour.concreteType === 'PT' ? 'Post-Tensioned' : 'Normal'}</p>
+                  <p><strong>Design Grade:</strong> {selectedPour.designGrade}</p>
+                  <p><strong>Total Planned:</strong> {selectedPour.totalQuantityPlanned} m³</p>
+                  {selectedPour.concreteType === 'PT' && (
+                    <p className="text-blue-600 font-medium mt-2">
+                      ℹ️ PT concrete: Tests will be at 5 days (not 3 days)
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Basic Information */}
         <Card>
           <CardHeader>
