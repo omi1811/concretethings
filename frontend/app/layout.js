@@ -5,13 +5,13 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'ConcreteThings QMS - Construction Quality Management',
-  description: 'ISO Compliant Construction Quality Management System',
+  title: 'ProSite - Professional Site Management',
+  description: 'Modular Quality Management System for Construction, Manufacturing & Industrial Sites',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'ConcreteQMS'
+    title: 'ProSite'
   }
 };
 

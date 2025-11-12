@@ -1,7 +1,7 @@
 {
-  "name": "concretethings-qms",
-  "short_name": "ConcreteQMS",
-  "description": "Construction Quality Management System - ISO Compliant",
+  "name": "prosite",
+  "short_name": "ProSite",
+  "description": "Professional Site Management Platform - Quality, Inventory & Safety",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

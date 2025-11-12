@@ -61,19 +61,19 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-2xl mb-8">
-            <span className="text-white font-bold text-3xl">CQ</span>
+            <span className="text-white font-bold text-3xl">PS</span>
           </div>
           
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-            ConcreteThings QMS
+            ProSite
           </h1>
           
           <p className="text-xl text-gray-600 mb-4 max-w-3xl mx-auto">
-            Digitize Your Construction Quality Management
+            Professional Site Management Platform
           </p>
           
           <p className="text-lg text-gray-500 mb-2">
-            ISO Compliant • Real-time • Paperless • Works Offline
+            Quality Management • Modular • Multi-Industry • Works Offline
           </p>
           
           <p className="text-2xl font-bold text-blue-600 mb-8">

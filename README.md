@@ -1,33 +1,45 @@
-# ConcreteThings – Concrete Quality Management System
+# ProSite – Professional Site Management Platform
 
-A **production-ready** full-stack application for managing concrete quality with **JWT authentication**, image storage, WhatsApp notifications, multi-tenant support, and a commercial-grade Python Flask backend.
+A **production-ready** modular platform for professional site management across Construction, Manufacturing, and Industrial sectors with **multi-tenant SaaS architecture**, JWT authentication, and industry-agnostic quality management modules.
 
-## ✨ Features
+## 🚀 Vision
 
-### Core Quality Management Features
-- ✅ **RMC Vendor Management** - Vendor registration, contact info, quality approval
-- ✅ **Batch Register** - Mandatory batch sheet photo, detailed location tracking
-- ✅ **Cube Test Register** - IS 516-1959 compliant, auto pass/fail calculation
-- ✅ **WhatsApp Notifications** - Real-time alerts on test failures and batch rejections
-- ✅ **Mix Design Management** - Vendor-linked designs with approval workflow
-- ✅ **NCR Generation** - Automatic Non-Conformance Reports on failures
-- ✅ **Location Tracking** - Building, floor, zone, grid, element identification
+ProSite is a comprehensive site management ecosystem that grows with your business. Start with Quality Management, add Inventory Control, expand to Safety Management – all from one unified platform.
 
-### Technical Features
+## ✨ Core Platform Features
+
+### Multi-Tenant SaaS Architecture
+- ✅ **Support Admin Dashboard** - Manage companies, set project limits, control billing
+- ✅ **Company Management** - Per-company subscriptions with custom pricing
+- ✅ **Project-Based Pricing** - ₹5,000/month per active project
+- ✅ **Flexible Modules** - Subscribe to QMS, Inventory, Safety, or Industry-specific modules
+- ✅ **Role-Based Access** - 5-level hierarchy (Support Admin → Company Admin → Project Admin → Members → Permissions)
+
+### Technical Foundation
 - ✅ **Full CRUD REST API** with Flask + SQLAlchemy
 - ✅ **JWT Authentication** - Secure token-based auth with role-based access control
 - ✅ **Multi-Tenant Support** - Companies, users, projects, and memberships
-- ✅ **Image Upload & Storage** - Store mix design photos and batch sheets in database
-- ✅ **Document Management** - Upload PDF/Word files
+- ✅ **Image Upload & Storage** - Store documents and photos
 - ✅ **Responsive Web UI** - Works on desktop, tablet, and mobile
-- ✅ **Search & Filter** - Quickly find designs by project or ID
+- ✅ **Offline-First** - PWA architecture with IndexedDB
 
 ### Security Features
 - ✅ **Robust Authentication** - Email/phone login, strong password requirements
 - ✅ **Account Protection** - Failed login lockout (5 attempts = 30 min)
 - ✅ **Password Hashing** - pbkdf2:sha256 secure hashing
 - ✅ **Token Refresh** - Long-lived refresh tokens
-- ✅ **Role-Based Access** - System Admin, Company Admin, Project roles
+- ✅ **Granular Permissions** - 12 permission flags per user-project relationship
+
+## 📦 Available Modules
+
+### 1. Quality Management System (QMS) - Construction
+- ✅ **RMC Vendor Management** - Vendor registration, contact info, quality approval
+- ✅ **Batch Register** - Mandatory batch sheet photo, detailed location tracking
+- ✅ **Cube Test Register** - IS 516-1959 compliant, auto pass/fail calculation
+- ✅ **WhatsApp Notifications** - Real-time alerts on test failures
+- ✅ **Mix Design Management** - Vendor-linked designs with approval workflow
+- ✅ **NCR Generation** - Automatic Non-Conformance Reports on failures
+- ✅ **ISO Compliance** - Supports 7 ISO standards
 - ✅ **Email & Phone Validation** - Mandatory contact information
 
 ### Production Features
