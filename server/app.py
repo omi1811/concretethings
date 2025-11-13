@@ -158,7 +158,10 @@ def create_app() -> Flask:
     def too_large(error):
         return jsonify({"error": "File too large. Maximum size is 10MB."}), 413
 
-    init_db()
+    # Only initialize database in development mode
+    # In production, tables are created via migration scripts
+    if os.environ.get('FLASK_ENV') == 'development':
+        init_db()
 
     @app.route("/")
     def index() -> Any:
