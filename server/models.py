@@ -35,6 +35,10 @@ class Company(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     
+    # Multi-App Subscription Model
+    # subscribed_apps: JSON array of app names: ["safety"], ["concrete"], or ["safety", "concrete"]
+    subscribed_apps: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default='["safety", "concrete"]')  # JSON array
+    
     # SaaS Pricing Model - Project-based subscription
     subscription_plan: Mapped[str] = mapped_column(String(50), default="trial")  # trial, basic, pro, enterprise
     active_projects_limit: Mapped[int] = mapped_column(Integer, default=1)  # Number of projects allowed
@@ -59,9 +63,11 @@ class Company(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self) -> dict:
+        import json as json_module
         return {
             "id": self.id,
             "name": self.name,
+            "subscribedApps": json_module.loads(self.subscribed_apps) if self.subscribed_apps else ["safety", "concrete"],
             "subscriptionPlan": self.subscription_plan,
             "activeProjectsLimit": self.active_projects_limit,
             "pricePerProject": self.price_per_project,
@@ -78,6 +84,18 @@ class Company(Base):
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat()
         }
+    
+    def has_app(self, app_name: str) -> bool:
+        """Check if company has subscribed to specific app"""
+        import json as json_module
+        apps = json_module.loads(self.subscribed_apps) if self.subscribed_apps else []
+        return app_name in apps
+    
+    def has_both_apps(self) -> bool:
+        """Check if company has both safety and concrete apps"""
+        import json as json_module
+        apps = json_module.loads(self.subscribed_apps) if self.subscribed_apps else []
+        return "safety" in apps and "concrete" in apps
 
 
 class User(Base):

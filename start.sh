@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# ConcreteThings QMS - Startup Script
-echo "🚀 Starting ConcreteThings QMS..."
+# ProSite - Startup Script
+echo "🚀 Starting ProSite..."
 echo ""
 
 # Start backend

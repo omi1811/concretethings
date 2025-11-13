@@ -176,7 +176,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-200 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
-          <p>© 2025 ConcreteThings QMS. All rights reserved.</p>
+          <p>© 2025 ProSite. All rights reserved.</p>
         </div>
       </footer>
       
@@ -314,9 +314,9 @@ export default function Home() {
                 <div className="pt-4 border-t border-gray-200 mt-6">
                   <p className="text-sm text-gray-600 text-center mb-3">Or reach us directly:</p>
                   <div className="flex flex-col sm:flex-row justify-center gap-4 text-sm">
-                    <a href="mailto:support@concretethings.com" className="flex items-center gap-2 text-blue-600 hover:text-blue-700">
-                      <Mail className="w-4 h-4" />
-                      support@concretethings.com
+                    <a href="mailto:support@prosite.com" className="flex items-center gap-2 text-blue-600 hover:text-blue-700">
+                      <Mail className="w-5 h-5" />
+                      support@prosite.com
                     </a>
                     <a href="tel:+919876543210" className="flex items-center gap-2 text-blue-600 hover:text-blue-700">
                       <Phone className="w-4 h-4" />

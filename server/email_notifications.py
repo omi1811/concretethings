@@ -1,5 +1,8 @@
 """
-Email Notification Service for ConcreteThings QMS.
+"""
+Email Notification Service for ProSite.
+
+Provides email notification capabilities for critical events such as:
 Sends automated emails for test failures, batch rejections, and NCRs.
 ISO 9001:2015 - Clause 7.4 (Communication)
 """
@@ -22,7 +25,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", SMTP_USER)
-SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "ConcreteThings QMS")
+SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "ProSite")
 EMAIL_ENABLED = os.getenv("EMAIL_ENABLED", "false").lower() == "true"
 APP_URL = os.getenv("APP_URL", "http://localhost:8000")
 
@@ -147,7 +150,7 @@ def _get_email_header() -> str:
     """Common email header with branding."""
     return """
     <div style="background-color: #f44336; color: white; padding: 20px; text-align: center;">
-        <h1 style="margin: 0; font-size: 24px;">🏗️ ConcreteThings QMS</h1>
+        <h1 style="margin: 0; font-size: 24px;">🏗️ ProSite</h1>
         <p style="margin: 5px 0 0 0; font-size: 14px;">Quality Management System</p>
     </div>
     """
@@ -156,7 +159,7 @@ def _get_email_footer() -> str:
     """Common email footer."""
     return f"""
     <div style="background-color: #f5f5f5; padding: 20px; margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
-        <p style="margin: 0;">This is an automated notification from ConcreteThings QMS</p>
+        <p style="margin: 0;">This is an automated notification from ProSite</p>
         <p style="margin: 5px 0;">Please do not reply to this email</p>
         <p style="margin: 10px 0 0 0;">
             <a href="{APP_URL}" style="color: #f44336; text-decoration: none;">Visit Dashboard</a>
@@ -315,7 +318,7 @@ ACTION REQUIRED: Immediate investigation needed.
 View Details: {APP_URL}/cube-test/{data['test_id']}
 
 ---
-This is an automated notification from ConcreteThings QMS
+This is an automated notification from ProSite
 """
     
     return html, text
@@ -394,7 +397,7 @@ def get_email_setup_instructions() -> str:
    SMTP_USER=your-email@gmail.com
    SMTP_PASSWORD=your-16-char-app-password
    SMTP_FROM_EMAIL=your-email@gmail.com
-   SMTP_FROM_NAME=ConcreteThings QMS
+   SMTP_FROM_NAME=ProSite
    EMAIL_ENABLED=true
    ```
 
@@ -431,8 +434,8 @@ email = get_email_service()
 email.send_email(
     "test@example.com",
     "Test Email",
-    "<h1>Test from ConcreteThings QMS</h1>",
-    "Test from ConcreteThings QMS"
+    "<h1>Test from ProSite</h1>",
+    "Test from ProSite"
 )
 ```
 """
@@ -569,7 +572,7 @@ def notify_batch_rejection_email(
                 </ol>
                 
                 <div class="footer">
-                    <p><strong>This is an automated notification from ConcreteThings Quality Management System.</strong></p>
+                    <p><strong>This is an automated notification from ProSite.</strong></p>
                     <p>If you have questions, please contact the project Quality Manager.</p>
                     <p style="font-size: 0.8em; color: #999;">
                         Batch ID: {batch_id} | Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
@@ -605,7 +608,7 @@ def notify_batch_rejection_email(
     4. Ensure all future deliveries meet specified requirements
     
     ---
-    This is an automated notification from ConcreteThings Quality Management System.
+    This is an automated notification from ProSite.
     If you have questions, please contact the project Quality Manager.
     
     Batch ID: {batch_id} | Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}

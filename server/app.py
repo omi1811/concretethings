@@ -31,6 +31,16 @@ from .material_vehicle_register import material_vehicle_bp
 from .project_settings import project_settings_bp
 from .background_jobs import background_jobs_bp
 from .bulk_entry import bulk_entry_bp
+from .safety import safety_bp
+from .safety_nc import nc_bp
+from .permit_to_work import ptw_bp
+from .tbt import tbt_bp
+from .training_qr_attendance import training_qr_bp
+from .safety_inductions import safety_induction_bp
+from .incident_investigation import incident_bp
+from .safety_audits import audit_bp
+from .ppe_tracking import ppe_bp
+from .geofence_api import geofence_bp
 # TODO: Handover register needs database migration before enabling
 # from .handover_register import handover_bp
 
@@ -59,7 +69,7 @@ def create_app() -> Flask:
     # Configuration
     app.config['SECRET_KEY'] = config_obj.SECRET_KEY
     app.config['MAX_CONTENT_LENGTH'] = config_obj.MAX_UPLOAD_SIZE
-    app.config['JWT_SECRET_KEY'] = config_obj.SECRET_KEY
+    app.config['JWT_SECRET_KEY'] = config_obj.JWT_SECRET_KEY
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False  # Handled in auth.py
     app.config['JWT_IDENTITY_CLAIM'] = 'sub'  # Use 'sub' claim for identity
     # Disable sub claim validation since we use dict identity
@@ -117,6 +127,36 @@ def create_app() -> Flask:
     # Register background jobs blueprint (time limits, test reminders)
     app.register_blueprint(background_jobs_bp)
     
+    # Register safety module blueprint
+    app.register_blueprint(safety_bp)
+    
+    # Register NC management blueprint
+    app.register_blueprint(nc_bp)
+    
+    # Register Permit-to-Work blueprint
+    app.register_blueprint(ptw_bp)
+    
+    # Register TBT (Toolbox Talk) blueprint
+    app.register_blueprint(tbt_bp)
+    
+    # Register Training QR Attendance blueprint (cross-app feature - requires both Safety + Concrete)
+    app.register_blueprint(training_qr_bp)
+    
+    # Register Safety Inductions blueprint (worker onboarding with Aadhar verification)
+    app.register_blueprint(safety_induction_bp)
+    
+    # Register Incident Investigation blueprint (OSHA compliant incident reporting)
+    app.register_blueprint(incident_bp)
+    
+    # Register Safety Audits blueprint (ISO 45001 compliant audits)
+    app.register_blueprint(audit_bp)
+    
+    # Register PPE Tracking blueprint (PPE issuance, return, damage, inventory)
+    app.register_blueprint(ppe_bp)
+    
+    # Register Geo-fencing blueprint (location-based access control)
+    app.register_blueprint(geofence_bp)
+    
     # TODO: Register handover register blueprint after database migration
     # app.register_blueprint(handover_bp)
     
@@ -170,7 +210,22 @@ def create_app() -> Flask:
     
     @app.route('/health', methods=['GET'])
     def health():
-        return jsonify({"status": "healthy", "service": "prosite-api"})    # -------- API: Mix Designs --------
+        return jsonify({"status": "healthy", "service": "prosite-api"})
+    
+    # Multi-app subscription endpoint
+    @app.route('/api/user/app-access', methods=['GET'])
+    @jwt_required()
+    def get_user_app_access():
+        """Get current user's subscribed apps and available features"""
+        try:
+            from .subscription_middleware import get_user_app_access
+            access_info = get_user_app_access()
+            return jsonify(access_info), 200
+        except Exception as e:
+            logger.error(f"Error getting app access: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+    
+    # -------- API: Mix Designs --------
     @app.get("/api/mix-designs")
     @jwt_required()
     def list_mix_designs():

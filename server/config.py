@@ -14,6 +14,7 @@ class Config:
     
     # Flask
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', os.environ.get('SECRET_KEY', 'dev-jwt-secret-key-change-in-production'))
     DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
     
     # Server

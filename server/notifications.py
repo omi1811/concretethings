@@ -167,7 +167,7 @@ def format_cube_test_failure(data: dict) -> str:
 🔗 View Details: {app_url}/cube-test/{data['test_id']}
 
 ---
-_Automated alert from ConcreteThings QMS_
+_Automated alert from ProSite_
 """
     return message
 
@@ -206,7 +206,7 @@ def format_batch_rejection(data: dict) -> str:
 🔗 View Batch: {app_url}/batch/{data['batch_id']}
 
 ---
-_Automated alert from ConcreteThings QMS_
+_Automated alert from ProSite_
 """
     return message
 
@@ -245,7 +245,7 @@ def format_ncr_generated(data: dict) -> str:
 🔗 View NCR: {app_url}/ncr/{data['ncr_number']}
 
 ---
-_Automated alert from ConcreteThings QMS_
+_Automated alert from ProSite_
 """
     return message
 
@@ -276,7 +276,7 @@ def format_batch_delivered(data: dict) -> str:
 ✓ Entry recorded and pending verification
 
 ---
-_Automated alert from ConcreteThings QMS_
+_Automated alert from ProSite_
 """
     return message
 
@@ -421,7 +421,7 @@ def get_setup_instructions() -> str:
 from server.notifications import get_whatsapp_service
 
 whatsapp = get_whatsapp_service()
-whatsapp.send_message("+1234567890", "Test message from ConcreteThings QMS")
+whatsapp.send_message("+1234567890", "Test message from ProSite")
 ```
 
 ## Install Dependencies
@@ -463,7 +463,7 @@ Allowed: {notification_data['allowedHours']} hours
 
 Please check vehicle status and take necessary action.
 
-- ConcreteThings QMS
+- ProSite
 """
         
         # Send WhatsApp if enabled
@@ -510,7 +510,7 @@ Status: ⏳ PENDING
 
 Please complete the test and record results in the system.
 
-- ConcreteThings QMS
+- ProSite
 """
         
         # Send WhatsApp if enabled
@@ -561,7 +561,7 @@ Date: {datetime.now().strftime('%Y-%m-%d')}
 ⚠️ Please review and take necessary action.
 Delayed testing may affect quality records and compliance.
 
-- ConcreteThings QMS
+- ProSite
 """
         
         # Send WhatsApp if enabled

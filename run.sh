@@ -1,7 +1,7 @@
 #!/bin/bash
-# Quick start script for ConcreteThings application
+# Quick start script for ProSite application
 
-echo "🏗️  ConcreteThings - Mix Design Management"
+echo "🏗️  ProSite - Professional Site Management"
 echo "=========================================="
 echo ""
 

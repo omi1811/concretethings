@@ -55,10 +55,10 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
-            <span className="text-white font-bold text-2xl">CQ</span>
+            <span className="text-white font-bold text-2xl">PS</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">ConcreteThings QMS</h1>
-          <p className="text-gray-600 mt-2">Construction Quality Management System</p>
+          <h1 className="text-3xl font-bold text-gray-900">ProSite</h1>
+          <p className="text-gray-600 mt-2">Professional Site Management Platform</p>
         </div>
         
         {/* Login form */}
