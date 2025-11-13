@@ -165,12 +165,9 @@ def create_app() -> Flask:
         # Serve the frontend index
         return send_from_directory(app.static_folder, "index.html")
     
-    @app.route("/health")
-    def health() -> Any:
-        """Health check endpoint for monitoring."""
-        return jsonify({"status": "healthy", "service": "concretethings-api"})
-
-    # -------- API: Mix Designs --------
+    @app.route('/health', methods=['GET'])
+    def health():
+        return jsonify({"status": "healthy", "service": "prosite-api"})    # -------- API: Mix Designs --------
     @app.get("/api/mix-designs")
     @jwt_required()
     def list_mix_designs():
