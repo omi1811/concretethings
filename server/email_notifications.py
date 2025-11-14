@@ -1,5 +1,4 @@
 """
-"""
 Email Notification Service for ProSite.
 
 Provides email notification capabilities for critical events such as:
