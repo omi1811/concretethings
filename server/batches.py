@@ -50,38 +50,47 @@ def get_current_user_id():
 # DECORATORS
 # ============================================================================
 
-def project_access_required(f):
+def project_access_required(optional=False):
     """
     Decorator to check if user has access to the project.
     Expects 'project_id' in request JSON or query params.
-    """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        user_id = get_current_user_id()
-        
-        # Get project_id from request
-        if request.method == 'GET':
-            project_id = request.args.get('project_id', type=int)
-        else:
-            data = request.get_json() if request.is_json else None
-            project_id = data.get('project_id') if data else None
-        
-        if not project_id:
-            return jsonify({"error": "project_id is required"}), 400
-        
-        # Check if user has access to this project
-        with session_scope() as session:
-            membership = session.query(ProjectMembership).filter_by(
-                user_id=user_id,
-                project_id=project_id
-            ).first()
-            
-            if not membership:
-                return jsonify({"error": "Access denied. You are not a member of this project"}), 403
-        
-        return f(*args, **kwargs)
     
-    return decorated_function
+    Args:
+        optional: If True, allows requests without project_id (for listing all)
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user_id = get_current_user_id()
+            
+            # Get project_id from request
+            if request.method == 'GET':
+                project_id = request.args.get('project_id', type=int)
+            else:
+                data = request.get_json() if request.is_json else None
+                project_id = data.get('project_id') if data else None
+            
+            # If optional and no project_id provided, allow through
+            if optional and not project_id:
+                return f(*args, **kwargs)
+            
+            if not project_id:
+                return jsonify({"error": "project_id is required"}), 400
+            
+            # Check if user has access to this project
+            with session_scope() as session:
+                membership = session.query(ProjectMembership).filter_by(
+                    user_id=user_id,
+                    project_id=project_id
+                ).first()
+                
+                if not membership:
+                    return jsonify({"error": "Access denied. You are not a member of this project"}), 403
+            
+            return f(*args, **kwargs)
+        
+        return decorated_function
+    return decorator
 
 
 def quality_team_required(f):
@@ -129,13 +138,13 @@ def quality_team_required(f):
 
 @batches_bp.route('/api/batches', methods=['GET'])
 @jwt_required()
-@project_access_required
+@project_access_required(optional=True)
 def get_batches():
     """
-    Get list of batches for a project.
+    Get list of batches for a project or all projects.
     
     Query Parameters:
-    - project_id (required): Filter by project
+    - project_id (optional): Filter by project (if not provided, returns all batches for user's company)
     - vendor_id (optional): Filter by vendor
     - mix_design_id (optional): Filter by mix design
     - status (optional): Filter by verification status (pending/approved/rejected)
@@ -152,13 +161,27 @@ def get_batches():
         status = request.args.get('status')
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
+        user_id = get_current_user_id()
         
         with session_scope() as session:
+            # Get user's company
+            user = session.query(User).filter_by(id=user_id).first()
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+            
             # Base query - exclude soft deleted
-            query = session.query(BatchRegister).filter_by(
-                project_id=project_id,
-                is_deleted=False
-            )
+            if project_id:
+                # Filter by specific project
+                query = session.query(BatchRegister).filter_by(
+                    project_id=project_id,
+                    is_deleted=False
+                )
+            else:
+                # Get all batches for user's company projects
+                query = session.query(BatchRegister).join(Project).filter(
+                    Project.company_id == user.company_id,
+                    BatchRegister.is_deleted == False
+                )
             
             # Apply filters
             if vendor_id:
@@ -216,7 +239,7 @@ def get_batches():
 
 @batches_bp.route('/api/batches/<int:batch_id>', methods=['GET'])
 @jwt_required()
-@project_access_required
+@project_access_required()
 def get_batch(batch_id):
     """
     Get details of a specific batch.
@@ -288,7 +311,7 @@ def get_batch(batch_id):
 
 @batches_bp.route('/api/batches/<int:batch_id>/photo', methods=['GET'])
 @jwt_required()
-@project_access_required
+@project_access_required()
 def get_batch_photo(batch_id):
     """
     Get batch sheet photo.
@@ -334,7 +357,7 @@ def get_batch_photo(batch_id):
 
 @batches_bp.route('/api/batches', methods=['POST'])
 @jwt_required()
-@project_access_required
+@project_access_required()
 def create_batch():
     """
     Create a new batch with mandatory photo upload.
@@ -497,7 +520,7 @@ def create_batch():
 
 @batches_bp.route('/api/batches/<int:batch_id>', methods=['PUT'])
 @jwt_required()
-@project_access_required
+@project_access_required()
 def update_batch(batch_id):
     """
     Update batch details.
@@ -793,7 +816,7 @@ def delete_batch(batch_id):
 
 @batches_bp.route('/api/batches/<int:batch_id>/complete', methods=['POST'])
 @jwt_required()
-@project_access_required
+@project_access_required()
 def complete_batch(batch_id):
     """
     Mark batch as complete and return summary for cube casting workflow.

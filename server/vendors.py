@@ -47,79 +47,88 @@ def get_current_user_id():
 # DECORATORS
 # ============================================================================
 
-def project_access_required(f):
+def project_access_required(optional=False):
     """
     Decorator to check if user has access to the project.
     Expects 'project_id' in request JSON or query params.
-    """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        user_id = get_current_user_id()
-        user_id = get_current_user_id()
-        
-        # Get project_id from request
-        if request.method == 'GET':
-            project_id = request.args.get('project_id', type=int)
-        else:
-            data = request.get_json()
-            project_id = data.get('project_id') if data else None
-        
-        if not project_id:
-            return jsonify({"error": "project_id is required"}), 400
-        
-        # Check if user has access to this project
-        with session_scope() as session:
-            membership = session.query(ProjectMembership).filter_by(
-                user_id=user_id,
-                project_id=project_id
-            ).first()
-            
-            if not membership:
-                return jsonify({"error": "Access denied. You are not a member of this project"}), 403
-        
-        return f(*args, **kwargs)
     
-    return decorated_function
+    Args:
+        optional: If True, allows requests without project_id (for listing all)
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user_id = get_current_user_id()
+            
+            # Get project_id from request
+            if request.method == 'GET':
+                project_id = request.args.get('project_id', type=int)
+            else:
+                data = request.get_json()
+                project_id = data.get('project_id') if data else None
+            
+            # If optional and no project_id provided, allow through
+            if optional and not project_id:
+                return f(*args, **kwargs)
+            
+            if not project_id:
+                return jsonify({"error": "project_id is required"}), 400
+            
+            # Check if user has access to this project
+            with session_scope() as session:
+                membership = session.query(ProjectMembership).filter_by(
+                    user_id=user_id,
+                    project_id=project_id
+                ).first()
+                
+                if not membership:
+                    return jsonify({"error": "Access denied. You are not a member of this project"}), 403
+            
+            return f(*args, **kwargs)
+        
+        return decorated_function
+    return decorator
 
 
-def quality_team_required(f):
+def quality_team_required():
     """
     Decorator to check if user is part of quality team (QM or Quality Engineer).
     """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        user_id = get_current_user_id()
-        user_id = get_current_user_id()
-        
-        # Get project_id
-        if request.method == 'GET':
-            project_id = request.args.get('project_id', type=int)
-        else:
-            data = request.get_json()
-            project_id = data.get('project_id') if data else None
-        
-        if not project_id:
-            return jsonify({"error": "project_id is required"}), 400
-        
-        # Check user role
-        with session_scope() as session:
-            membership = session.query(ProjectMembership).filter_by(
-                user_id=user_id,
-                project_id=project_id
-            ).first()
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user_id = get_current_user_id()
             
-            if not membership:
-                return jsonify({"error": "Access denied"}), 403
+            # Get project_id
+            if request.method == 'GET':
+                project_id = request.args.get('project_id', type=int)
+            else:
+                data = request.get_json()
+                project_id = data.get('project_id') if data else None
             
-            allowed_roles = ['Quality Manager', 'Quality Engineer']
-            if membership.role not in allowed_roles:
-                return jsonify({
-                    "error": f"Access denied. Only {', '.join(allowed_roles)} can perform this action"
-                }), 403
+            if not project_id:
+                return jsonify({"error": "project_id is required"}), 400
+            
+            # Check user role
+            with session_scope() as session:
+                membership = session.query(ProjectMembership).filter_by(
+                    user_id=user_id,
+                    project_id=project_id
+                ).first()
+                
+                if not membership:
+                    return jsonify({"error": "Access denied"}), 403
+                
+                allowed_roles = ['Quality Manager', 'Quality Engineer']
+                if membership.role not in allowed_roles:
+                    return jsonify({
+                        "error": f"Access denied. Only {', '.join(allowed_roles)} can perform this action"
+                    }), 403
+            
+            return f(*args, **kwargs)
         
-        return f(*args, **kwargs)
-    
-    return decorated_function
+        return decorated_function
+    return decorator
 
 
 # ============================================================================
@@ -128,13 +137,13 @@ def quality_team_required(f):
 
 @vendors_bp.route('/api/vendors', methods=['GET'])
 @jwt_required()
-@project_access_required
+@project_access_required(optional=True)
 def get_vendors():
     """
-    Get list of RMC vendors for a project.
+    Get list of RMC vendors for a project or all projects.
     
     Query Parameters:
-    - project_id (required): Filter by project
+    - project_id (optional): Filter by project (if not provided, returns all vendors for user's company)
     - approved_only (optional): If true, return only approved vendors (default: true)
     
     Returns:
@@ -143,13 +152,27 @@ def get_vendors():
     try:
         project_id = request.args.get('project_id', type=int)
         approved_only = request.args.get('approved_only', 'true').lower() == 'true'
+        user_id = get_current_user_id()
         
         with session_scope() as session:
+            # Get user's company
+            user = session.query(User).filter_by(id=user_id).first()
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+            
             # Base query - exclude soft deleted
-            query = session.query(RMCVendor).filter_by(
-                project_id=project_id,
-                is_deleted=False
-            )
+            if project_id:
+                # Filter by specific project
+                query = session.query(RMCVendor).filter_by(
+                    project_id=project_id,
+                    is_deleted=False
+                )
+            else:
+                # Get all vendors for user's company projects
+                query = session.query(RMCVendor).join(Project).filter(
+                    Project.company_id == user.company_id,
+                    RMCVendor.is_deleted == False
+                )
             
             # Filter by approval status
             if approved_only:
@@ -171,7 +194,7 @@ def get_vendors():
 
 @vendors_bp.route('/api/vendors/pending', methods=['GET'])
 @jwt_required()
-@quality_team_required
+@quality_team_required()
 def get_pending_vendors():
     """
     Get list of vendors pending approval.
@@ -207,7 +230,7 @@ def get_pending_vendors():
 
 @vendors_bp.route('/api/vendors/<int:vendor_id>', methods=['GET'])
 @jwt_required()
-@project_access_required
+@project_access_required()
 def get_vendor(vendor_id):
     """
     Get details of a specific vendor.
@@ -247,7 +270,7 @@ def get_vendor(vendor_id):
 
 @vendors_bp.route('/api/vendors', methods=['POST'])
 @jwt_required()
-@quality_team_required
+@quality_team_required()
 def create_vendor():
     """
     Create a new RMC vendor.
@@ -340,7 +363,7 @@ def create_vendor():
 
 @vendors_bp.route('/api/vendors/<int:vendor_id>', methods=['PUT'])
 @jwt_required()
-@quality_team_required
+@quality_team_required()
 def update_vendor(vendor_id):
     """
     Update vendor details.
@@ -424,7 +447,7 @@ def update_vendor(vendor_id):
 
 @vendors_bp.route('/api/vendors/<int:vendor_id>/approve', methods=['PUT'])
 @jwt_required()
-@quality_team_required
+@quality_team_required()
 def approve_vendor(vendor_id):
     """
     Approve or reject a vendor.
@@ -492,7 +515,7 @@ def approve_vendor(vendor_id):
 
 @vendors_bp.route('/api/vendors/<int:vendor_id>', methods=['DELETE'])
 @jwt_required()
-@quality_team_required
+@quality_team_required()
 def delete_vendor(vendor_id):
     """
     Soft delete a vendor.

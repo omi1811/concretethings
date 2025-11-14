@@ -531,3 +531,255 @@ def mark_notification_read(notification_id):
         session.commit()
         
         return jsonify({"success": True, "message": "Notification marked as read"}), 200
+
+
+# ============================================================================
+# SCORING & REPORTING ENDPOINTS
+# ============================================================================
+
+@nc_bp.route("/dashboard", methods=["GET"])
+@jwt_required()
+def get_nc_dashboard():
+    """
+    Get NC dashboard statistics with scoring.
+    
+    Query params:
+    - project_id (optional): Filter by project
+    - contractor (optional): Filter by contractor name
+    """
+    current_user = get_current_user()
+    
+    with session_scope() as session:
+        project_id = request.args.get('project_id', type=int)
+        contractor = request.args.get('contractor')
+        
+        # Base query
+        query = session.query(NonConformance).filter_by(company_id=current_user.company_id)
+        
+        if project_id:
+            query = query.filter_by(project_id=project_id)
+        if contractor:
+            query = query.filter_by(assigned_to_contractor=contractor)
+        
+        # Status counts
+        status_counts = {}
+        for status in ['open', 'under_review', 'action_taken', 'verified', 'closed', 'rejected']:
+            count = query.filter_by(nc_status=status).count()
+            status_counts[status] = count
+        
+        # Severity counts
+        severity_counts = {}
+        for severity in ['critical', 'major', 'minor']:
+            count = query.filter(func.lower(NonConformance.severity) == severity).count()
+            severity_counts[severity] = count
+        
+        # Open issues (not closed)
+        open_count = query.filter(NonConformance.nc_status != 'closed').count()
+        
+        # Overdue issues (past target date and not closed)
+        now = datetime.utcnow()
+        overdue_count = query.filter(
+            and_(
+                NonConformance.target_closure_date < now,
+                NonConformance.nc_status != 'closed'
+            )
+        ).count()
+        
+        # Average resolution time for closed issues
+        closed_issues = query.filter_by(nc_status='closed').all()
+        avg_resolution_days = 0
+        if closed_issues:
+            total_days = sum([nc.actual_resolution_days or 0 for nc in closed_issues])
+            avg_resolution_days = total_days / len(closed_issues) if total_days > 0 else 0
+        
+        # Calculate weighted score based on severity
+        all_issues = query.all()
+        total_count = len(all_issues)
+        closed_count = len([nc for nc in all_issues if nc.nc_status == 'closed'])
+        
+        # Calculate total severity points
+        # Critical=1.5, Major=1.0, Minor=0.5 (but map to High=1.0, Moderate=0.5, Low=0.25)
+        severity_map = {'critical': 1.0, 'major': 0.5, 'minor': 0.25}
+        
+        total_severity_points = sum(
+            severity_map.get(nc.severity.lower(), 0.5) for nc in all_issues
+        )
+        
+        closed_severity_points = sum(
+            severity_map.get(nc.severity.lower(), 0.5) 
+            for nc in all_issues if nc.nc_status == 'closed'
+        )
+        
+        # Score calculation: (closed severity points / total severity points) * 10
+        score_out_of_10 = (closed_severity_points / total_severity_points * 10) if total_severity_points > 0 else 10.0
+        
+        # Count open issues by severity
+        open_critical = len([nc for nc in all_issues if nc.severity.lower() == 'critical' and nc.nc_status != 'closed'])
+        open_major = len([nc for nc in all_issues if nc.severity.lower() == 'major' and nc.nc_status != 'closed'])
+        open_minor = len([nc for nc in all_issues if nc.severity.lower() == 'minor' and nc.nc_status != 'closed'])
+        
+        return jsonify({
+            "status_counts": status_counts,
+            "severity_counts": severity_counts,
+            "open_by_severity": {
+                "critical": open_critical,
+                "major": open_major,
+                "minor": open_minor
+            },
+            "total": total_count,
+            "open": open_count,
+            "closed": closed_count,
+            "overdue": overdue_count,
+            "avg_resolution_days": round(avg_resolution_days, 1),
+            "score": round(score_out_of_10, 1),
+            "total_severity_points": round(total_severity_points, 2),
+            "closed_severity_points": round(closed_severity_points, 2),
+            "performance_grade": calculate_performance_grade(score_out_of_10)
+        }), 200
+
+
+@nc_bp.route("/reports/<report_type>", methods=["GET"])
+@jwt_required()
+def generate_nc_report(report_type):
+    """
+    Generate contractor performance report.
+    
+    report_type: 'monthly' or 'weekly'
+    
+    Query params:
+    - project_id (required): Project to report on
+    - contractor (required): Contractor name
+    - period (optional): Period in YYYY-MM or YYYY-Wnn format
+    """
+    current_user = get_current_user()
+    
+    if report_type not in ['monthly', 'weekly']:
+        return jsonify({"error": "Invalid report_type. Use 'monthly' or 'weekly'"}), 400
+    
+    project_id = request.args.get('project_id', type=int)
+    contractor = request.args.get('contractor')
+    
+    if not project_id or not contractor:
+        return jsonify({"error": "project_id and contractor are required"}), 400
+    
+    # Determine period
+    if report_type == 'monthly':
+        period = request.args.get('period', datetime.utcnow().strftime('%Y-%m'))
+        period_filter = NonConformance.score_month == period
+    else:  # weekly
+        period = request.args.get('period', datetime.utcnow().strftime('%Y-W%U'))
+        period_filter = NonConformance.score_week == period
+    
+    with session_scope() as session:
+        # Get all NCs for this contractor and period
+        issues = session.query(NonConformance).filter(
+            and_(
+                NonConformance.company_id == current_user.company_id,
+                NonConformance.project_id == project_id,
+                NonConformance.assigned_to_contractor == contractor,
+                period_filter
+            )
+        ).all()
+        
+        # Calculate scores with severity weighting
+        severity_map = {'critical': 1.0, 'major': 0.5, 'minor': 0.25}
+        
+        critical_count = sum(1 for nc in issues if nc.severity.lower() == 'critical' and nc.nc_status != 'closed')
+        major_count = sum(1 for nc in issues if nc.severity.lower() == 'major' and nc.nc_status != 'closed')
+        minor_count = sum(1 for nc in issues if nc.severity.lower() == 'minor' and nc.nc_status != 'closed')
+        
+        closed_count = sum(1 for nc in issues if nc.nc_status == 'closed')
+        total_count = len(issues)
+        open_count = total_count - closed_count
+        
+        # Calculate weighted score
+        total_severity_points = sum(severity_map.get(nc.severity.lower(), 0.5) for nc in issues)
+        closed_severity_points = sum(
+            severity_map.get(nc.severity.lower(), 0.5) 
+            for nc in issues if nc.nc_status == 'closed'
+        )
+        
+        total_score = (closed_severity_points / total_severity_points * 10) if total_severity_points > 0 else 10.0
+        
+        # Calculate closure rate
+        closure_rate = (closed_count / total_count * 100) if total_count > 0 else 0
+        
+        # Calculate avg resolution time
+        closed_issues = [nc for nc in issues if nc.nc_status == 'closed' and nc.actual_resolution_days]
+        avg_resolution_days = sum(nc.actual_resolution_days for nc in closed_issues) / len(closed_issues) if closed_issues else 0
+        
+        # Determine performance grade
+        grade = calculate_performance_grade(total_score)
+        
+        # Check if report already exists
+        from .safety_nc_models import SafetyNCScoreReport
+        existing_report = session.query(SafetyNCScoreReport).filter(
+            and_(
+                SafetyNCScoreReport.company_id == current_user.company_id,
+                SafetyNCScoreReport.project_id == project_id,
+                SafetyNCScoreReport.contractor_name == contractor,
+                SafetyNCScoreReport.report_type == report_type,
+                SafetyNCScoreReport.period == period
+            )
+        ).first()
+        
+        if existing_report:
+            # Update existing report
+            existing_report.critical_count = critical_count
+            existing_report.major_count = major_count
+            existing_report.minor_count = minor_count
+            existing_report.total_issues_count = total_count
+            existing_report.closed_issues_count = closed_count
+            existing_report.open_issues_count = open_count
+            existing_report.total_score = total_score
+            existing_report.closure_rate = closure_rate
+            existing_report.avg_resolution_days = avg_resolution_days
+            existing_report.performance_grade = grade
+            existing_report.generated_at = datetime.utcnow()
+            
+            report = existing_report
+        else:
+            # Create new report
+            report = SafetyNCScoreReport(
+                company_id=current_user.company_id,
+                project_id=project_id,
+                contractor_name=contractor,
+                report_type=report_type,
+                period=period,
+                critical_count=critical_count,
+                major_count=major_count,
+                minor_count=minor_count,
+                total_issues_count=total_count,
+                closed_issues_count=closed_count,
+                open_issues_count=open_count,
+                total_score=total_score,
+                closure_rate=closure_rate,
+                avg_resolution_days=avg_resolution_days,
+                performance_grade=grade,
+                generated_by_user_id=current_user.id,
+                generated_at=datetime.utcnow()
+            )
+            session.add(report)
+        
+        session.flush()
+        
+        return jsonify({
+            "report": report.to_dict(),
+            "issues": [nc.to_dict() for nc in issues]
+        }), 200
+
+
+def calculate_performance_grade(score_out_of_10: float) -> str:
+    """Calculate performance grade based on score out of 10.
+    Higher score = better performance (more closures)
+    """
+    if score_out_of_10 >= 9.0:
+        return 'A'
+    elif score_out_of_10 >= 7.0:
+        return 'B'
+    elif score_out_of_10 >= 5.0:
+        return 'C'
+    elif score_out_of_10 >= 3.0:
+        return 'D'
+    else:
+        return 'F'

@@ -16,6 +16,7 @@ from .db import init_db, session_scope
 from .models import MixDesign
 from .config import get_config
 from .auth import auth_bp, init_jwt
+from .password_reset import password_reset_bp
 from .vendors import vendors_bp
 from .batches import batches_bp
 from .cube_tests import cube_tests_bp
@@ -37,6 +38,8 @@ from .permit_to_work import ptw_bp
 from .tbt import tbt_bp
 from .training_qr_attendance import training_qr_bp
 from .safety_inductions import safety_induction_bp
+from .concrete_nc_api import concrete_nc_bp
+from .projects import projects_bp
 # TODO: These blueprints need db.session refactoring to use session_scope()
 # from .incident_investigation import incident_bp
 # from .safety_audits import audit_bp
@@ -82,6 +85,9 @@ def create_app() -> Flask:
     
     # Register authentication blueprint
     app.register_blueprint(auth_bp)
+    
+    # Register password reset blueprint
+    app.register_blueprint(password_reset_bp)
     
     # Register vendor management blueprint
     app.register_blueprint(vendors_bp)
@@ -145,6 +151,12 @@ def create_app() -> Flask:
     
     # Register Safety Inductions blueprint (worker onboarding with Aadhar verification)
     app.register_blueprint(safety_induction_bp)
+    
+    # Register Concrete NC (Non-Conformance) blueprint
+    app.register_blueprint(concrete_nc_bp)
+    
+    # Register Projects blueprint (listing and management)
+    app.register_blueprint(projects_bp)
     
     # TODO: These blueprints temporarily disabled - need db.session refactoring to use session_scope()
     # Register Incident Investigation blueprint (OSHA compliant incident reporting)

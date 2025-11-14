@@ -35,9 +35,9 @@ class Company(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     
-    # Multi-App Subscription Model (DISABLED - column not in database)
-    # subscribed_apps: JSON array of app names: ["safety"], ["concrete"], or ["safety", "concrete"]
-    # subscribed_apps: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default='["safety", "concrete"]')  # JSON array
+    # Module Subscription System
+    # Modules: "safety", "concrete", "concrete_nc", "safety_nc"
+    subscribed_modules: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default='["safety", "concrete"]')
     
     # SaaS Pricing Model - Project-based subscription
     subscription_plan: Mapped[str] = mapped_column(String(50), default="trial")  # trial, basic, pro, enterprise
@@ -64,10 +64,17 @@ class Company(Base):
 
     def to_dict(self) -> dict:
         import json as json_module
+        # Parse subscribed modules
+        try:
+            modules = json_module.loads(self.subscribed_modules) if self.subscribed_modules else ["safety", "concrete"]
+        except:
+            modules = ["safety", "concrete"]
+        
         return {
             "id": self.id,
             "name": self.name,
-            "subscribedApps": ["safety", "concrete"],  # Hardcoded until database migration
+            "subscribedModules": modules,
+            "subscribedApps": modules,  # Backward compatibility
             "subscriptionPlan": self.subscription_plan,
             "activeProjectsLimit": self.active_projects_limit,
             "pricePerProject": self.price_per_project,
@@ -85,17 +92,30 @@ class Company(Base):
             "updatedAt": self.updated_at.isoformat()
         }
     
-    def has_app(self, app_name: str) -> bool:
-        """Check if company has subscribed to specific app"""
+    def has_module(self, module_name: str) -> bool:
+        """Check if company has subscribed to specific module."""
         import json as json_module
-        apps = json_module.loads(self.subscribed_apps) if self.subscribed_apps else []
-        return app_name in apps
+        try:
+            modules = json_module.loads(self.subscribed_modules) if self.subscribed_modules else []
+            return module_name in modules
+        except:
+            return False
+    
+    def has_app(self, app_name: str) -> bool:
+        """Backward compatibility: alias for has_module."""
+        return self.has_module(app_name)
     
     def has_both_apps(self) -> bool:
-        """Check if company has both safety and concrete apps"""
+        """Check if company has both safety and concrete apps."""
+        return self.has_module("safety") and self.has_module("concrete")
+    
+    def get_subscribed_modules(self) -> list:
+        """Get list of subscribed modules."""
         import json as json_module
-        apps = json_module.loads(self.subscribed_apps) if self.subscribed_apps else []
-        return "safety" in apps and "concrete" in apps
+        try:
+            return json_module.loads(self.subscribed_modules) if self.subscribed_modules else []
+        except:
+            return []
 
 
 class User(Base):
