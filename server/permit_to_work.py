@@ -200,7 +200,7 @@ def log_permit_action(permit_id, action_type, action_description, performed_by, 
 # ============================================================================
 
 @ptw_bp.route("/types", methods=["GET"])
-@jwt_required
+@jwt_required()
 def get_permit_types():
     """Get all permit types for company"""
     current_user = get_current_user()
@@ -218,7 +218,7 @@ def get_permit_types():
 
 
 @ptw_bp.route("/types", methods=["POST"])
-@jwt_required
+@jwt_required()
 def create_permit_type():
     """Create new permit type (Admin only)"""
     current_user = get_current_user()
@@ -258,7 +258,7 @@ def create_permit_type():
 # ============================================================================
 
 @ptw_bp.route("", methods=["POST"])
-@jwt_required
+@jwt_required()
 def create_permit():
     """
     Contractor creates work permit (saves as draft)
@@ -344,7 +344,7 @@ def create_permit():
 
 
 @ptw_bp.route("/<int:permit_id>/submit", methods=["POST"])
-@jwt_required
+@jwt_required()
 def submit_permit(permit_id):
     """
     Contractor submits permit for approval
@@ -414,7 +414,7 @@ def submit_permit(permit_id):
 # ============================================================================
 
 @ptw_bp.route("/<int:permit_id>/engineer-review", methods=["POST"])
-@jwt_required
+@jwt_required()
 def engineer_review_permit(permit_id):
     """
     Site Engineer approves/rejects permit
@@ -501,7 +501,7 @@ def engineer_review_permit(permit_id):
 # ============================================================================
 
 @ptw_bp.route("/<int:permit_id>/safety-review", methods=["POST"])
-@jwt_required
+@jwt_required()
 def safety_review_permit(permit_id):
     """
     Safety Officer gives final approval/rejection
@@ -598,7 +598,7 @@ def safety_review_permit(permit_id):
 # ============================================================================
 
 @ptw_bp.route("/<int:permit_id>/close", methods=["POST"])
-@jwt_required
+@jwt_required()
 def close_permit(permit_id):
     """
     Contractor closes permit after work completion
@@ -654,7 +654,7 @@ def close_permit(permit_id):
 
 
 @ptw_bp.route("/<int:permit_id>/verify-closure", methods=["POST"])
-@jwt_required
+@jwt_required()
 def verify_closure(permit_id):
     """
     Engineer/Safety Officer verifies permit closure
@@ -713,7 +713,7 @@ def verify_closure(permit_id):
 # ============================================================================
 
 @ptw_bp.route("", methods=["GET"])
-@jwt_required
+@jwt_required()
 def get_permits():
     """
     Get all permits with filtering
@@ -750,7 +750,7 @@ def get_permits():
 
 
 @ptw_bp.route("/<int:permit_id>", methods=["GET"])
-@jwt_required
+@jwt_required()
 def get_permit_details(permit_id):
     """
     Get complete permit details including signatures and audit log
@@ -785,7 +785,7 @@ def get_permit_details(permit_id):
 
 
 @ptw_bp.route("/<int:permit_id>/signboard", methods=["GET"])
-@jwt_required
+@jwt_required()
 def get_permit_signboard(permit_id):
     """
     Get signature board showing all approvers
@@ -832,7 +832,7 @@ def get_permit_signboard(permit_id):
 
 
 @ptw_bp.route("/dashboard", methods=["GET"])
-@jwt_required
+@jwt_required()
 def permit_dashboard():
     """
     Permit dashboard with counts

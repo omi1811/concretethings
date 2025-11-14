@@ -579,3 +579,25 @@ Delayed testing may affect quality records and compliance.
     except Exception as e:
         logger.error(f"Error sending missed test warning: {e}")
         return False
+
+
+# ============================================================================
+# Simple Alert Function (for quick notifications)
+# ============================================================================
+
+def send_whatsapp_alert(phone: str, message: str) -> bool:
+    """
+    Send a simple WhatsApp alert message.
+    
+    Args:
+        phone: Recipient phone number (international format: +1234567890)
+        message: Message text to send
+        
+    Returns:
+        bool: True if sent successfully, False otherwise
+        
+    Usage:
+        send_whatsapp_alert("+919876543210", "Safety NC raised: NC-2024-001")
+    """
+    whatsapp = get_whatsapp_service()
+    return whatsapp.send_message(phone, message)

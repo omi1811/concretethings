@@ -9,7 +9,7 @@ from flask import Blueprint, request, jsonify
 from functools import wraps
 from datetime import datetime, timedelta
 from sqlalchemy import func, extract, and_, or_
-from server.db import db
+from server.db import session_scope
 from server.models import User, Company, Project
 from server.safety_models import Worker
 from server.incident_investigation_models import IncidentReport, IncidentType, IncidentStatus

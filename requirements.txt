@@ -12,3 +12,4 @@ Flask-JWT-Extended==4.6.0
 twilio>=9.0.0
 pandas>=2.2.0
 openpyxl>=3.1.0
+qrcode>=7.4.0

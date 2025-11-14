@@ -37,10 +37,11 @@ from .permit_to_work import ptw_bp
 from .tbt import tbt_bp
 from .training_qr_attendance import training_qr_bp
 from .safety_inductions import safety_induction_bp
-from .incident_investigation import incident_bp
-from .safety_audits import audit_bp
-from .ppe_tracking import ppe_bp
-from .geofence_api import geofence_bp
+# TODO: These blueprints need db.session refactoring to use session_scope()
+# from .incident_investigation import incident_bp
+# from .safety_audits import audit_bp
+# from .ppe_tracking import ppe_bp
+# from .geofence_api import geofence_bp
 # TODO: Handover register needs database migration before enabling
 # from .handover_register import handover_bp
 
@@ -145,17 +146,19 @@ def create_app() -> Flask:
     # Register Safety Inductions blueprint (worker onboarding with Aadhar verification)
     app.register_blueprint(safety_induction_bp)
     
+    # TODO: These blueprints temporarily disabled - need db.session refactoring to use session_scope()
     # Register Incident Investigation blueprint (OSHA compliant incident reporting)
-    app.register_blueprint(incident_bp)
+    # app.register_blueprint(incident_bp)
     
+    # TODO: These blueprints temporarily disabled - need db.session refactoring to use session_scope()
     # Register Safety Audits blueprint (ISO 45001 compliant audits)
-    app.register_blueprint(audit_bp)
+    # app.register_blueprint(audit_bp)
     
     # Register PPE Tracking blueprint (PPE issuance, return, damage, inventory)
-    app.register_blueprint(ppe_bp)
+    # app.register_blueprint(ppe_bp)
     
     # Register Geo-fencing blueprint (location-based access control)
-    app.register_blueprint(geofence_bp)
+    # app.register_blueprint(geofence_bp)
     
     # TODO: Register handover register blueprint after database migration
     # app.register_blueprint(handover_bp)

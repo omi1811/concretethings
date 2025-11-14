@@ -141,6 +141,23 @@ def get_email_service() -> EmailService:
     return _email_service
 
 
+def send_email(to_email: str, subject: str, html_body: str, text_body: Optional[str] = None) -> bool:
+    """
+    Send an email (convenience wrapper).
+    
+    Args:
+        to_email: Recipient email address
+        subject: Email subject
+        html_body: HTML email body
+        text_body: Plain text fallback (optional)
+        
+    Returns:
+        bool: True if sent successfully, False otherwise
+    """
+    email_service = get_email_service()
+    return email_service.send_email(to_email, subject, html_body, text_body)
+
+
 # ============================================================================
 # HTML Email Templates
 # ============================================================================

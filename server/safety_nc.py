@@ -192,7 +192,7 @@ _Automated alert from ProSite Safety_
 
 
 @nc_bp.route("", methods=["GET"])
-@jwt_required
+@jwt_required()
 def get_ncs():
     """
     Get all NCs with filtering
@@ -233,7 +233,7 @@ def get_ncs():
 
 
 @nc_bp.route("", methods=["POST"])
-@jwt_required
+@jwt_required()
 def create_nc():
     """
     Create new NC (by safety officer)
@@ -286,7 +286,7 @@ def create_nc():
 
 
 @nc_bp.route("/<int:nc_id>", methods=["GET"])
-@jwt_required
+@jwt_required()
 def get_nc_details(nc_id):
     """Get NC details with comments"""
     current_user = get_current_user()
@@ -311,7 +311,7 @@ def get_nc_details(nc_id):
 
 
 @nc_bp.route("/<int:nc_id>/action", methods=["POST"])
-@jwt_required
+@jwt_required()
 def submit_corrective_action(nc_id):
     """
     Submit corrective action (by contractor)
@@ -351,7 +351,7 @@ def submit_corrective_action(nc_id):
 
 
 @nc_bp.route("/<int:nc_id>/verify", methods=["POST"])
-@jwt_required
+@jwt_required()
 def verify_nc(nc_id):
     """
     Verify/Reject NC closure (by safety officer)
@@ -410,7 +410,7 @@ def verify_nc(nc_id):
 
 
 @nc_bp.route("/<int:nc_id>/comments", methods=["POST"])
-@jwt_required
+@jwt_required()
 def add_comment(nc_id):
     """
     Add comment to NC (discussion between safety officer and contractor)
@@ -448,7 +448,7 @@ def add_comment(nc_id):
 
 
 @nc_bp.route("/dashboard", methods=["GET"])
-@jwt_required
+@jwt_required()
 def nc_dashboard():
     """
     Get NC dashboard for contractors
@@ -492,7 +492,7 @@ def nc_dashboard():
 
 
 @nc_bp.route("/notifications", methods=["GET"])
-@jwt_required
+@jwt_required()
 def get_notifications():
     """Get all notifications for current user/contractor"""
     current_user = get_current_user()
@@ -512,7 +512,7 @@ def get_notifications():
 
 
 @nc_bp.route("/notifications/<int:notification_id>/read", methods=["POST"])
-@jwt_required
+@jwt_required()
 def mark_notification_read(notification_id):
     """Mark notification as read"""
     current_user = get_current_user()
