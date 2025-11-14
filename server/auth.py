@@ -530,11 +530,10 @@ def refresh():
 def get_current_user():
     """Get current user information."""
     try:
-        claims = get_jwt_identity()
-        user_id = claims.get("user_id")
+        user_id = get_jwt_identity()  # Returns user_id as string
         
         with session_scope() as s:
-            user = s.get(User, user_id)
+            user = s.get(User, int(user_id))
             if not user:
                 return jsonify({"error": "User not found"}), 404
             
@@ -550,8 +549,7 @@ def get_current_user():
 def change_password():
     """Change user password."""
     try:
-        claims = get_jwt_identity()
-        user_id = claims.get("user_id")
+        user_id = get_jwt_identity()  # Returns user_id as string
         
         data = request.get_json()
         current_password = data.get("current_password")

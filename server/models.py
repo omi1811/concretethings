@@ -35,9 +35,9 @@ class Company(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     
-    # Multi-App Subscription Model
+    # Multi-App Subscription Model (DISABLED - column not in database)
     # subscribed_apps: JSON array of app names: ["safety"], ["concrete"], or ["safety", "concrete"]
-    subscribed_apps: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default='["safety", "concrete"]')  # JSON array
+    # subscribed_apps: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default='["safety", "concrete"]')  # JSON array
     
     # SaaS Pricing Model - Project-based subscription
     subscription_plan: Mapped[str] = mapped_column(String(50), default="trial")  # trial, basic, pro, enterprise
@@ -67,7 +67,7 @@ class Company(Base):
         return {
             "id": self.id,
             "name": self.name,
-            "subscribedApps": json_module.loads(self.subscribed_apps) if self.subscribed_apps else ["safety", "concrete"],
+            "subscribedApps": ["safety", "concrete"],  # Hardcoded until database migration
             "subscriptionPlan": self.subscription_plan,
             "activeProjectsLimit": self.active_projects_limit,
             "pricePerProject": self.price_per_project,
