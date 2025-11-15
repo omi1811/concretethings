@@ -1,0 +1,26 @@
+{
+  "table": "safety_workers",
+  "columns": [
+    "id",
+    "company_id",
+    "project_id",
+    "worker_code",
+    "full_name",
+    "phone",
+    "email",
+    "photo",
+    "contractor",
+    "skill_category",
+    "designation",
+    "training_records",
+    "certifications",
+    "qr_code",
+    "nfc_tag",
+    "is_active",
+    "joined_date",
+    "created_at",
+    "updated_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

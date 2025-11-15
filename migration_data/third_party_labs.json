@@ -1,0 +1,30 @@
+{
+  "table": "third_party_labs",
+  "columns": [
+    "id",
+    "company_id",
+    "lab_name",
+    "lab_code",
+    "contact_person_name",
+    "contact_phone",
+    "contact_email",
+    "address",
+    "city",
+    "state",
+    "pincode",
+    "nabl_accreditation_number",
+    "nabl_accreditation_valid_till",
+    "scope_of_accreditation",
+    "is_approved",
+    "approved_by",
+    "approved_at",
+    "is_active",
+    "is_deleted",
+    "deleted_at",
+    "deleted_by",
+    "created_at",
+    "updated_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

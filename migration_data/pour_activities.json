@@ -1,0 +1,30 @@
+{
+  "table": "pour_activities",
+  "columns": [
+    "id",
+    "project_id",
+    "pour_id",
+    "pour_date",
+    "building_name",
+    "floor_level",
+    "zone",
+    "grid_reference",
+    "structural_element_type",
+    "element_id",
+    "location_description",
+    "concrete_type",
+    "design_grade",
+    "total_quantity_planned",
+    "total_quantity_received",
+    "status",
+    "started_at",
+    "completed_at",
+    "created_by",
+    "completed_by",
+    "remarks",
+    "created_at",
+    "updated_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
-import { materialTestAPI } from '@/lib/api';
+import { materialTestAPI } from '@/lib/api-optimized';
 
 export default function MaterialTestsPage() {
   const [tests, setTests] = useState([]);

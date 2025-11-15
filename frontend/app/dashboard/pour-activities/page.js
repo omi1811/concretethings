@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
-import { pourActivityAPI } from '@/lib/api';
+import { pourActivityAPI } from '@/lib/api-optimized';
 
 export default function PourActivitiesPage() {
   const [pourActivities, setPourActivities] = useState([]);

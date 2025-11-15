@@ -1,0 +1,19 @@
+{
+  "table": "tbt_topics",
+  "columns": [
+    "id",
+    "company_id",
+    "topic_name",
+    "category",
+    "description",
+    "key_points_template",
+    "hazards_template",
+    "ppe_template",
+    "is_active",
+    "usage_count",
+    "created_at",
+    "updated_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

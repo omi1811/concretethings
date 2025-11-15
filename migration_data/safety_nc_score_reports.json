@@ -1,0 +1,26 @@
+{
+  "table": "safety_nc_score_reports",
+  "columns": [
+    "id",
+    "company_id",
+    "project_id",
+    "contractor_name",
+    "report_type",
+    "period",
+    "critical_count",
+    "major_count",
+    "minor_count",
+    "total_issues_count",
+    "closed_issues_count",
+    "open_issues_count",
+    "total_score",
+    "closure_rate",
+    "avg_resolution_days",
+    "performance_grade",
+    "generated_by_user_id",
+    "generated_at",
+    "created_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

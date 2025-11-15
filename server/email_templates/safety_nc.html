@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProSite - Safety Non-Conformance</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f6f9; }
+        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); padding: 30px 20px; text-align: center; color: white; }
+        .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
+        .header p { margin: 5px 0 0; opacity: 0.9; font-size: 14px; }
+        .content { padding: 30px 25px; }
+        .alert-box { background: #fee2e2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        .alert-box h3 { margin: 0 0 8px; color: #991b1b; font-size: 16px; }
+        .severity { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 10px 0; }
+        .severity-critical { background: #fee2e2; color: #991b1b; }
+        .severity-high { background: #fed7aa; color: #c2410c; }
+        .severity-medium { background: #fef3c7; color: #92400e; }
+        .severity-low { background: #dbeafe; color: #1e40af; }
+        .info-grid { display: table; width: 100%; margin: 20px 0; }
+        .info-row { display: table-row; }
+        .info-label { display: table-cell; padding: 10px 15px; font-weight: 600; color: #4b5563; background: #f9fafb; border: 1px solid #e5e7eb; width: 35%; }
+        .info-value { display: table-cell; padding: 10px 15px; color: #1f2937; background: white; border: 1px solid #e5e7eb; border-left: none; }
+        .description-box { background: #fef2f2; border: 1px solid #fecaca; padding: 15px; margin: 20px 0; border-radius: 6px; }
+        .description-box h4 { margin: 0 0 10px; color: #991b1b; font-size: 14px; }
+        .description-box p { margin: 5px 0; color: #7f1d1d; line-height: 1.6; }
+        .action-items { background: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .action-items h4 { margin: 0 0 10px; color: #1e40af; font-size: 14px; }
+        .action-items ul { margin: 5px 0; padding-left: 20px; }
+        .action-items li { color: #1e3a8a; margin: 5px 0; }
+        .button { display: inline-block; background: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600; }
+        .button:hover { background: #991b1b; }
+        .footer { background: #1f2937; color: #9ca3af; padding: 20px 25px; text-align: center; font-size: 12px; }
+        .footer a { color: #60a5fa; text-decoration: none; }
+        .compliance { text-align: center; padding: 15px; background: #f9fafb; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦺 ProSite Safety Management</h1>
+            <p>ISO 45001:2018 Safety Standards</p>
+        </div>
+        
+        <div class="content">
+            <div class="alert-box">
+                <h3>⚠️ Safety Non-Conformance Report</h3>
+                <p>A safety non-conformance has been identified and requires immediate attention.</p>
+            </div>
+            
+            <span class="severity severity-{{severity_class}}">
+                {{severity_level}} SEVERITY
+            </span>
+            
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-label">NC Number:</div>
+                    <div class="info-value"><strong>{{nc_number}}</strong></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Date Reported:</div>
+                    <div class="info-value">{{date_reported}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Location:</div>
+                    <div class="info-value">{{location}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Reported By:</div>
+                    <div class="info-value">{{reported_by}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Category:</div>
+                    <div class="info-value">{{category}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Risk Score:</div>
+                    <div class="info-value"><strong>{{risk_score}}</strong> ({{risk_level}})</div>
+                </div>
+            </div>
+            
+            <div class="description-box">
+                <h4>📝 Description:</h4>
+                <p>{{description}}</p>
+            </div>
+            
+            <div class="description-box" style="background: #fef3c7; border-color: #fde68a;">
+                <h4 style="color: #92400e;">⚡ Immediate Hazards:</h4>
+                <p style="color: #78350f;">{{immediate_hazards}}</p>
+            </div>
+            
+            <div class="action-items">
+                <h4>📋 Immediate Actions Required:</h4>
+                <ul>
+                    <li>Safety manager and site supervisor notified immediately</li>
+                    <li>Area isolated/secured if necessary</li>
+                    <li>Toolbox talk to be conducted with all workers</li>
+                    <li>Corrective action plan to be submitted within 24 hours</li>
+                    <li>Root cause analysis required</li>
+                    <li>Follow-up inspection scheduled</li>
+                </ul>
+            </div>
+            
+            <h3 style="color: #1f2937; margin-top: 25px;">Assigned To</h3>
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-label">Responsible Person:</div>
+                    <div class="info-value">{{assigned_to}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Target Closure:</div>
+                    <div class="info-value">{{target_date}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Status:</div>
+                    <div class="info-value">{{status}}</div>
+                </div>
+            </div>
+            
+            <center>
+                <a href="{{dashboard_url}}" class="button">View Full NCR →</a>
+            </center>
+        </div>
+        
+        <div class="compliance">
+            <p>This notification complies with ISO 45001:2018 Safety Management Standards</p>
+            <p>NCR Reference: {{ncr_ref}} | Generated: {{timestamp}}</p>
+        </div>
+        
+        <div class="footer">
+            <p><strong>ProSite Safety Management System</strong></p>
+            <p>Professional Construction Site Safety | <a href="{{portal_url}}">Safety Portal</a></p>
+            <p>🚨 Emergency: +1 (555) 911-SAFE | 📧 safety@prosite.com</p>
+            <p style="margin-top: 10px; color: #6b7280;">
+                This is an automated notification. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

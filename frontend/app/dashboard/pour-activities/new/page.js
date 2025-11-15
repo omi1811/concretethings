@@ -7,7 +7,7 @@ import { ArrowLeft, Save, MapPin, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { pourActivityAPI } from '@/lib/api';
+import { pourActivityAPI } from '@/lib/api-optimized';
 
 export default function NewPourActivityPage() {
   const router = useRouter();

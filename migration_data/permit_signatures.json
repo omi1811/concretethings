@@ -1,0 +1,20 @@
+{
+  "table": "permit_signatures",
+  "columns": [
+    "id",
+    "permit_id",
+    "signer_role",
+    "signer_id",
+    "signer_name",
+    "signer_designation",
+    "signature_type",
+    "signature_data",
+    "action",
+    "comments",
+    "ip_address",
+    "device_info",
+    "signed_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

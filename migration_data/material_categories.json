@@ -1,0 +1,18 @@
+{
+  "table": "material_categories",
+  "columns": [
+    "id",
+    "company_id",
+    "category_name",
+    "category_code",
+    "description",
+    "applicable_standards",
+    "requires_testing",
+    "test_frequency",
+    "is_active",
+    "created_at",
+    "updated_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

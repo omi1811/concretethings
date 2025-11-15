@@ -1,0 +1,31 @@
+{
+  "table": "safety_form_templates",
+  "columns": [
+    "id",
+    "company_id",
+    "project_id",
+    "module_id",
+    "template_name",
+    "template_code",
+    "description",
+    "category",
+    "form_fields",
+    "has_scoring",
+    "scoring_config",
+    "requires_approval",
+    "approval_levels",
+    "auto_assign",
+    "assignment_rules",
+    "is_recurring",
+    "recurrence_config",
+    "version",
+    "is_latest",
+    "parent_template_id",
+    "is_active",
+    "created_at",
+    "updated_at",
+    "created_by"
+  ],
+  "row_count": 0,
+  "data": []
+}

@@ -1,0 +1,18 @@
+{
+  "table": "concrete_nc_notifications",
+  "columns": [
+    "id",
+    "issue_id",
+    "recipient_user_id",
+    "notification_type",
+    "channel",
+    "message",
+    "sent_at",
+    "delivered",
+    "delivery_status",
+    "read_at",
+    "created_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

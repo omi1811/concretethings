@@ -1,0 +1,24 @@
+{
+  "table": "safety_actions",
+  "columns": [
+    "id",
+    "company_id",
+    "project_id",
+    "submission_id",
+    "action_number",
+    "action_description",
+    "assigned_to",
+    "priority",
+    "due_date",
+    "status",
+    "completion_notes",
+    "completion_photos",
+    "is_overdue",
+    "escalation_level",
+    "created_at",
+    "created_by",
+    "completed_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

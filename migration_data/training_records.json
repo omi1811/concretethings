@@ -1,0 +1,25 @@
+{
+  "table": "training_records",
+  "columns": [
+    "id",
+    "project_id",
+    "trainer_id",
+    "training_date",
+    "training_topic",
+    "trainee_names_json",
+    "building",
+    "activity",
+    "duration_minutes",
+    "photo_filename",
+    "photo_data",
+    "photo_mimetype",
+    "remarks",
+    "is_deleted",
+    "deleted_at",
+    "deleted_by",
+    "created_at",
+    "updated_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

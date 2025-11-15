@@ -1,0 +1,46 @@
+{
+  "table": "companies",
+  "columns": [
+    "id",
+    "name",
+    "subscription_plan",
+    "active_projects_limit",
+    "price_per_project",
+    "billing_status",
+    "subscription_start_date",
+    "subscription_end_date",
+    "last_payment_date",
+    "next_billing_date",
+    "company_email",
+    "company_phone",
+    "company_address",
+    "gstin",
+    "is_active",
+    "created_at",
+    "updated_at",
+    "subscribed_modules"
+  ],
+  "row_count": 1,
+  "data": [
+    {
+      "id": 1,
+      "name": "Test Construction Co.",
+      "subscription_plan": "trial",
+      "active_projects_limit": 5,
+      "price_per_project": 5000.0,
+      "billing_status": "active",
+      "subscription_start_date": null,
+      "subscription_end_date": null,
+      "last_payment_date": null,
+      "next_billing_date": null,
+      "company_email": null,
+      "company_phone": null,
+      "company_address": null,
+      "gstin": null,
+      "is_active": 1,
+      "created_at": "2025-11-12 07:14:16.605612",
+      "updated_at": "2025-11-12 07:14:16.605617",
+      "subscribed_modules": "[\"safety\", \"concrete\", \"concrete_nc\"]"
+    }
+  ]
+}

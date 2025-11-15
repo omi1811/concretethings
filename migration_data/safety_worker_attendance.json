@@ -1,0 +1,22 @@
+{
+  "table": "safety_worker_attendance",
+  "columns": [
+    "id",
+    "company_id",
+    "project_id",
+    "worker_id",
+    "date",
+    "check_in_time",
+    "check_out_time",
+    "check_in_method",
+    "check_in_location",
+    "ppe_verified",
+    "ppe_items_checked",
+    "ppe_photo",
+    "induction_completed",
+    "induction_date",
+    "created_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

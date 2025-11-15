@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { batchAPI } from '@/lib/api';
+import { batchAPI } from '@/lib/api-optimized';
 import { Spinner } from '@/components/ui/Spinner';
 
 export default function BatchesPage() {

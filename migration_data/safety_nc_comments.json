@@ -1,0 +1,13 @@
+{
+  "table": "safety_nc_comments",
+  "columns": [
+    "id",
+    "nc_id",
+    "comment_text",
+    "attachments",
+    "created_by",
+    "created_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

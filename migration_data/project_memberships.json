@@ -1,0 +1,48 @@
+{
+  "table": "project_memberships",
+  "columns": [
+    "id",
+    "project_id",
+    "user_id",
+    "role",
+    "can_create_batch",
+    "can_edit_batch",
+    "can_delete_batch",
+    "can_approve_batch",
+    "can_create_test",
+    "can_edit_test",
+    "can_delete_test",
+    "can_approve_test",
+    "can_manage_team",
+    "can_generate_reports",
+    "can_export_data",
+    "can_manage_settings",
+    "is_active",
+    "joined_at",
+    "added_by"
+  ],
+  "row_count": 1,
+  "data": [
+    {
+      "id": 1,
+      "project_id": 1,
+      "user_id": 1,
+      "role": "QualityEngineer",
+      "can_create_batch": 1,
+      "can_edit_batch": 1,
+      "can_delete_batch": 0,
+      "can_approve_batch": 0,
+      "can_create_test": 1,
+      "can_edit_test": 1,
+      "can_delete_test": 0,
+      "can_approve_test": 0,
+      "can_manage_team": 0,
+      "can_generate_reports": 1,
+      "can_export_data": 0,
+      "can_manage_settings": 0,
+      "is_active": 1,
+      "joined_at": "2025-11-12 07:14:16.700171",
+      "added_by": null
+    }
+  ]
+}

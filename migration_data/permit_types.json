@@ -1,0 +1,23 @@
+{
+  "table": "permit_types",
+  "columns": [
+    "id",
+    "company_id",
+    "permit_type_name",
+    "permit_code",
+    "description",
+    "risk_level",
+    "required_ppe",
+    "safety_precautions",
+    "required_equipment",
+    "requires_site_engineer",
+    "requires_safety_officer",
+    "requires_area_owner",
+    "max_validity_hours",
+    "is_active",
+    "created_at",
+    "created_by"
+  ],
+  "row_count": 0,
+  "data": []
+}

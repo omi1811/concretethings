@@ -1,0 +1,31 @@
+{
+  "table": "safety_form_submissions",
+  "columns": [
+    "id",
+    "company_id",
+    "project_id",
+    "template_id",
+    "submission_number",
+    "form_data",
+    "location",
+    "geo_location",
+    "photos",
+    "videos",
+    "documents",
+    "score",
+    "max_score",
+    "score_percentage",
+    "status",
+    "priority",
+    "approval_status",
+    "approvals",
+    "due_date",
+    "closed_date",
+    "is_overdue",
+    "submitted_at",
+    "submitted_by",
+    "updated_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

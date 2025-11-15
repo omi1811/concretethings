@@ -1,0 +1,24 @@
+{
+  "table": "approved_brands",
+  "columns": [
+    "id",
+    "company_id",
+    "category_id",
+    "brand_name",
+    "manufacturer_name",
+    "grade_specification",
+    "compliance_standards",
+    "approved_by",
+    "approved_at",
+    "approval_validity",
+    "type_test_certificate_name",
+    "type_test_certificate_data",
+    "type_test_certificate_mimetype",
+    "is_active",
+    "remarks",
+    "created_at",
+    "updated_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

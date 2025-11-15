@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
-import { materialTestAPI } from '@/lib/api';
+import { materialTestAPI } from '@/lib/api-optimized';
 
 export default function NewMaterialTestPage() {
   const router = useRouter();

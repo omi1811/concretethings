@@ -1,0 +1,18 @@
+{
+  "table": "permit_extensions",
+  "columns": [
+    "id",
+    "permit_id",
+    "requested_by",
+    "extension_reason",
+    "extended_until",
+    "additional_hours",
+    "approval_status",
+    "approved_by",
+    "approval_comments",
+    "requested_at",
+    "approved_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

@@ -1,0 +1,25 @@
+{
+  "table": "location_verifications",
+  "columns": [
+    "id",
+    "company_id",
+    "project_id",
+    "user_id",
+    "submitted_latitude",
+    "submitted_longitude",
+    "submitted_accuracy",
+    "is_verified",
+    "distance_from_center",
+    "allowed_radius",
+    "action",
+    "endpoint",
+    "request_id",
+    "ip_address",
+    "user_agent",
+    "device_info",
+    "verified_at",
+    "created_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

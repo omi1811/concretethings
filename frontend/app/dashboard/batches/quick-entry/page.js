@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
-import { pourActivityAPI } from '@/lib/api';
+import { pourActivityAPI } from '@/lib/api-optimized';
 import axios from 'axios';
 
 export default function QuickEntryBatchPage() {

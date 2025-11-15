@@ -670,6 +670,13 @@ def verify_batch(batch_id):
     Only accessible to Quality Managers and Quality Engineers.
     Sends email notification on rejection.
     
+    IMPORTANT: When APPROVING batches:
+    - Quality Engineers MUST provide slump_tested and temperature_celsius
+    - These quality parameters are mandatory for approval
+    
+    When REJECTING batches:
+    - Quality parameters are optional (rejection_reason is required instead)
+    
     Parameters:
     - batch_id: Batch ID
     
@@ -677,7 +684,9 @@ def verify_batch(batch_id):
     {
         "project_id": int (required),
         "status": "approved" | "rejected" (required),
-        "remarks": str (optional)
+        "remarks": str (optional),
+        "slump_tested": float (required when status=approved),
+        "temperature_celsius": float (required when status=approved)
     }
     
     Returns:
@@ -699,6 +708,30 @@ def verify_batch(batch_id):
             return jsonify({"error": "status must be 'approved' or 'rejected'"}), 400
         
         remarks = data.get('remarks', '')
+        slump_tested = data.get('slump_tested')
+        temperature_celsius = data.get('temperature_celsius')
+        
+        # VALIDATION: Quality Engineers must provide quality parameters when APPROVING
+        if status == 'approved':
+            if slump_tested is None or temperature_celsius is None:
+                return jsonify({
+                    "error": "Quality verification requires both slump_tested and temperature_celsius for approval",
+                    "details": "Quality Engineers must record slump test results (mm) and concrete temperature (°C) before approving batches"
+                }), 400
+            
+            # Validate numeric values
+            try:
+                slump_tested = float(slump_tested)
+                temperature_celsius = float(temperature_celsius)
+                
+                # Sanity checks
+                if slump_tested < 0 or slump_tested > 300:
+                    return jsonify({"error": "Invalid slump_tested value. Expected range: 0-300mm"}), 400
+                if temperature_celsius < 5 or temperature_celsius > 50:
+                    return jsonify({"error": "Invalid temperature_celsius value. Expected range: 5-50°C"}), 400
+                    
+            except (ValueError, TypeError):
+                return jsonify({"error": "slump_tested and temperature_celsius must be valid numbers"}), 400
         
         with session_scope() as session:
             batch = session.query(BatchRegister).filter_by(
@@ -710,6 +743,11 @@ def verify_batch(batch_id):
             if not batch:
                 return jsonify({"error": "Batch not found"}), 404
             
+            # Get verifier user to check role
+            verifier = session.query(User).filter_by(id=user_id).first()
+            if not verifier:
+                return jsonify({"error": "Verifier user not found"}), 404
+            
             # Update verification status
             batch.verification_status = status
             batch.verified_by = user_id
@@ -717,13 +755,17 @@ def verify_batch(batch_id):
             batch.verification_remarks = remarks
             batch.updated_at = datetime.utcnow()
             
+            # Update quality parameters when APPROVING
+            if status == 'approved':
+                batch.slump_tested = slump_tested
+                batch.temperature_celsius = temperature_celsius
+            
             session.flush()
             
             # Get enriched data for email
             vendor = session.query(RMCVendor).filter_by(id=batch.vendor_id).first()
             mix_design = session.query(MixDesign).filter_by(id=batch.mix_design_id).first()
             project = session.query(Project).filter_by(id=project_id).first()
-            verifier = session.query(User).filter_by(id=user_id).first()
             
             batch_dict = batch.to_dict()
             batch_dict['vendor_name'] = vendor.vendor_name if vendor else None
@@ -740,7 +782,7 @@ def verify_batch(batch_id):
                     project_name=project.name if project else "Unknown Project",
                     delivery_date=batch.delivery_date.strftime("%Y-%m-%d"),
                     rejection_reason=remarks,
-                    verifier_name=verifier.name if verifier else "Quality Team"
+                    verifier_name=verifier.full_name if verifier else "Quality Team"
                 )
             except Exception as email_error:
                 print(f"Warning: Failed to send rejection email: {str(email_error)}")

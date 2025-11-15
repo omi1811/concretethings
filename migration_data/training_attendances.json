@@ -1,0 +1,26 @@
+{
+  "table": "training_attendances",
+  "columns": [
+    "id",
+    "training_record_id",
+    "worker_id",
+    "worker_name",
+    "worker_code",
+    "worker_company",
+    "worker_trade",
+    "check_in_method",
+    "check_in_time",
+    "qr_code_scanned",
+    "device_info",
+    "assessment_score",
+    "passed_assessment",
+    "certificate_issued",
+    "certificate_number",
+    "has_signed",
+    "signature_timestamp",
+    "created_at",
+    "updated_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

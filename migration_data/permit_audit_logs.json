@@ -1,0 +1,15 @@
+{
+  "table": "permit_audit_logs",
+  "columns": [
+    "id",
+    "permit_id",
+    "action_type",
+    "action_description",
+    "performed_by",
+    "previous_state",
+    "new_state",
+    "action_timestamp"
+  ],
+  "row_count": 0,
+  "data": []
+}

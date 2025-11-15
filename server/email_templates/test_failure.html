@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProSite - Test Failure Notification</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f6f9; }
+        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px 20px; text-align: center; color: white; }
+        .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
+        .header p { margin: 5px 0 0; opacity: 0.9; font-size: 14px; }
+        .content { padding: 30px 25px; }
+        .alert-box { background: #fee2e2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        .alert-box h3 { margin: 0 0 8px; color: #991b1b; font-size: 16px; }
+        .info-grid { display: table; width: 100%; margin: 20px 0; }
+        .info-row { display: table-row; }
+        .info-label { display: table-cell; padding: 10px 15px; font-weight: 600; color: #4b5563; background: #f9fafb; border: 1px solid #e5e7eb; width: 35%; }
+        .info-value { display: table-cell; padding: 10px 15px; color: #1f2937; background: white; border: 1px solid #e5e7eb; border-left: none; }
+        .results-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .results-table th { background: #1f2937; color: white; padding: 12px; text-align: left; font-size: 13px; font-weight: 600; }
+        .results-table td { padding: 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
+        .results-table tr:last-child td { border-bottom: none; }
+        .fail { color: #dc2626; font-weight: 600; }
+        .pass { color: #16a34a; font-weight: 600; }
+        .action-items { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .action-items h4 { margin: 0 0 10px; color: #92400e; font-size: 14px; }
+        .action-items ul { margin: 5px 0; padding-left: 20px; }
+        .action-items li { color: #78350f; margin: 5px 0; }
+        .button { display: inline-block; background: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600; }
+        .button:hover { background: #1d4ed8; }
+        .footer { background: #1f2937; color: #9ca3af; padding: 20px 25px; text-align: center; font-size: 12px; }
+        .footer a { color: #60a5fa; text-decoration: none; }
+        .compliance { text-align: center; padding: 15px; background: #f9fafb; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ ProSite Quality Management</h1>
+            <p>ISO 9001:2015 Certified System</p>
+        </div>
+        
+        <div class="content">
+            <div class="alert-box">
+                <h3>⚠️ Concrete Test Failure Alert</h3>
+                <p>A concrete cube test has failed to meet the required strength specifications.</p>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-label">Batch Number:</div>
+                    <div class="info-value"><strong>{{batch_number}}</strong></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Test Date:</div>
+                    <div class="info-value">{{test_date}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Age (days):</div>
+                    <div class="info-value">{{age_days}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Project:</div>
+                    <div class="info-value">{{project_name}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Location:</div>
+                    <div class="info-value">{{location}}</div>
+                </div>
+            </div>
+            
+            <h3 style="color: #1f2937; margin-top: 25px;">Test Results</h3>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Cube ID</th>
+                        <th>Strength (MPa)</th>
+                        <th>Required (MPa)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{test_results_rows}}
+                </tbody>
+            </table>
+            
+            <div class="action-items">
+                <h4>📋 Required Actions:</h4>
+                <ul>
+                    <li>Immediate notification to Quality Manager and Project Engineer</li>
+                    <li>Investigate cause of failure (mix design, curing, testing procedure)</li>
+                    <li>Review batch records and material certificates</li>
+                    <li>Issue Non-Conformance Report (NCR) if required</li>
+                    <li>Conduct additional testing if necessary</li>
+                    <li>Document corrective actions in QMS</li>
+                </ul>
+            </div>
+            
+            <center>
+                <a href="{{dashboard_url}}" class="button">View Full Report →</a>
+            </center>
+        </div>
+        
+        <div class="compliance">
+            <p>This notification complies with ISO 9001:2015 Quality Management Standards</p>
+            <p>Document Reference: {{doc_ref}} | Generated: {{timestamp}}</p>
+        </div>
+        
+        <div class="footer">
+            <p><strong>ProSite Quality Management System</strong></p>
+            <p>Professional Construction Site Management | <a href="{{portal_url}}">QMS Portal</a></p>
+            <p>📧 quality@prosite.com | 📞 +1 (555) 123-4567</p>
+            <p style="margin-top: 10px; color: #6b7280;">
+                This is an automated notification. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProSite - Batch Rejection Notice</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f6f9; }
+        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); padding: 30px 20px; text-align: center; color: white; }
+        .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
+        .header p { margin: 5px 0 0; opacity: 0.9; font-size: 14px; }
+        .content { padding: 30px 25px; }
+        .alert-box { background: #fed7aa; border-left: 4px solid #ea580c; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        .alert-box h3 { margin: 0 0 8px; color: #c2410c; font-size: 16px; }
+        .info-grid { display: table; width: 100%; margin: 20px 0; }
+        .info-row { display: table-row; }
+        .info-label { display: table-cell; padding: 10px 15px; font-weight: 600; color: #4b5563; background: #f9fafb; border: 1px solid #e5e7eb; width: 35%; }
+        .info-value { display: table-cell; padding: 10px 15px; color: #1f2937; background: white; border: 1px solid #e5e7eb; border-left: none; }
+        .reason-box { background: #fef2f2; border: 1px solid #fecaca; padding: 15px; margin: 20px 0; border-radius: 6px; }
+        .reason-box h4 { margin: 0 0 10px; color: #991b1b; font-size: 14px; }
+        .reason-box p { margin: 5px 0; color: #7f1d1d; line-height: 1.6; }
+        .action-items { background: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .action-items h4 { margin: 0 0 10px; color: #1e40af; font-size: 14px; }
+        .action-items ul { margin: 5px 0; padding-left: 20px; }
+        .action-items li { color: #1e3a8a; margin: 5px 0; }
+        .button { display: inline-block; background: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600; }
+        .button:hover { background: #1d4ed8; }
+        .footer { background: #1f2937; color: #9ca3af; padding: 20px 25px; text-align: center; font-size: 12px; }
+        .footer a { color: #60a5fa; text-decoration: none; }
+        .compliance { text-align: center; padding: 15px; background: #f9fafb; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ ProSite Quality Management</h1>
+            <p>ISO 9001:2015 Certified System</p>
+        </div>
+        
+        <div class="content">
+            <div class="alert-box">
+                <h3>🚫 Concrete Batch Rejection Notice</h3>
+                <p>A concrete batch has been rejected due to quality non-conformance.</p>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-label">Batch Number:</div>
+                    <div class="info-value"><strong>{{batch_number}}</strong></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Delivery Date:</div>
+                    <div class="info-value">{{delivery_date}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Supplier:</div>
+                    <div class="info-value">{{supplier_name}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Volume (m³):</div>
+                    <div class="info-value">{{volume}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Project:</div>
+                    <div class="info-value">{{project_name}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Rejected By:</div>
+                    <div class="info-value">{{rejected_by}}</div>
+                </div>
+            </div>
+            
+            <div class="reason-box">
+                <h4>❌ Rejection Reason:</h4>
+                <p>{{rejection_reason}}</p>
+            </div>
+            
+            <h3 style="color: #1f2937; margin-top: 25px;">Specification Details</h3>
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-label">Mix Design:</div>
+                    <div class="info-value">{{mix_design}}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Slump Required:</div>
+                    <div class="info-value">{{slump_required}} mm</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Slump Actual:</div>
+                    <div class="info-value">{{slump_actual}} mm</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Temperature:</div>
+                    <div class="info-value">{{temperature}} °C</div>
+                </div>
+            </div>
+            
+            <div class="action-items">
+                <h4>📋 Required Actions:</h4>
+                <ul>
+                    <li>Supplier notified of rejection - replacement batch required</li>
+                    <li>NCR issued and logged in Quality Management System</li>
+                    <li>Delivery documentation updated with rejection status</li>
+                    <li>Site engineer and project manager informed</li>
+                    <li>Root cause analysis to be conducted by supplier</li>
+                    <li>Corrective action plan required before next delivery</li>
+                </ul>
+            </div>
+            
+            <center>
+                <a href="{{dashboard_url}}" class="button">View NCR Report →</a>
+            </center>
+        </div>
+        
+        <div class="compliance">
+            <p>This notification complies with ISO 9001:2015 Quality Management Standards</p>
+            <p>NCR Reference: {{ncr_ref}} | Generated: {{timestamp}}</p>
+        </div>
+        
+        <div class="footer">
+            <p><strong>ProSite Quality Management System</strong></p>
+            <p>Professional Construction Site Management | <a href="{{portal_url}}">QMS Portal</a></p>
+            <p>📧 quality@prosite.com | 📞 +1 (555) 123-4567</p>
+            <p style="margin-top: 10px; color: #6b7280;">
+                This is an automated notification. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

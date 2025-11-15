@@ -1,0 +1,26 @@
+{
+  "table": "concrete_nc_score_reports",
+  "columns": [
+    "id",
+    "company_id",
+    "project_id",
+    "contractor_id",
+    "report_type",
+    "period",
+    "high_severity_count",
+    "moderate_severity_count",
+    "low_severity_count",
+    "total_issues_count",
+    "closed_issues_count",
+    "open_issues_count",
+    "total_score",
+    "closure_rate",
+    "avg_resolution_days",
+    "performance_grade",
+    "generated_by_user_id",
+    "generated_at",
+    "created_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

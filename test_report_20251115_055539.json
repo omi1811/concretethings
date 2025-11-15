@@ -1,0 +1,171 @@
+{
+  "session_start": "2025-11-15T05:55:39.216338",
+  "session_end": "2025-11-15T05:55:39.238059",
+  "duration_seconds": 0.021721,
+  "statistics": {
+    "total": 16,
+    "passed": 0,
+    "failed": 0,
+    "errors": 14,
+    "skipped": 2,
+    "pass_rate": 0.0
+  },
+  "modules": {
+    "Auth": {
+      "PASS": 0,
+      "FAIL": 0,
+      "ERROR": 10,
+      "SKIP": 0
+    },
+    "Projects": {
+      "PASS": 0,
+      "FAIL": 0,
+      "ERROR": 0,
+      "SKIP": 1
+    },
+    "RMC": {
+      "PASS": 0,
+      "FAIL": 0,
+      "ERROR": 0,
+      "SKIP": 1
+    },
+    "Password Reset": {
+      "PASS": 0,
+      "FAIL": 0,
+      "ERROR": 4,
+      "SKIP": 0
+    }
+  },
+  "test_results": [
+    {
+      "timestamp": "2025-11-15T05:55:39.219512",
+      "module": "Auth",
+      "test_name": "Register System Admin",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/register (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e13f620>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.220483",
+      "module": "Auth",
+      "test_name": "Login with valid credentials",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/login (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e13fd10>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.221287",
+      "module": "Auth",
+      "test_name": "Login with invalid password",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/login (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e180410>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.222829",
+      "module": "Auth",
+      "test_name": "Forgot Password",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/forgot-password (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e180b90>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.225548",
+      "module": "Auth",
+      "test_name": "Register project_manager",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/register (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e1812b0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.227086",
+      "module": "Auth",
+      "test_name": "Register quality_manager",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/register (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e13fef0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.228481",
+      "module": "Auth",
+      "test_name": "Register quality_engineer",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/register (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e13f680>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.229674",
+      "module": "Auth",
+      "test_name": "Register safety_manager",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/register (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e180d70>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.231114",
+      "module": "Auth",
+      "test_name": "Register contractor_supervisor",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/register (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e180440>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.232576",
+      "module": "Auth",
+      "test_name": "Register watchman",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/register (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e181ee0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.232665",
+      "module": "Projects",
+      "test_name": "Setup",
+      "status": "SKIP",
+      "details": "No system admin token available",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.232706",
+      "module": "RMC",
+      "test_name": "Setup",
+      "status": "SKIP",
+      "details": "No test projects available",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.233575",
+      "module": "Password Reset",
+      "test_name": "Request Reset",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/forgot-password (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e182750>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.235857",
+      "module": "Password Reset",
+      "test_name": "Request Reset",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/forgot-password (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e13f740>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.237122",
+      "module": "Password Reset",
+      "test_name": "Reset with invalid token",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/reset-password (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e112e70>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    {
+      "timestamp": "2025-11-15T05:55:39.237997",
+      "module": "Password Reset",
+      "test_name": "Reset with weak password",
+      "status": "ERROR",
+      "details": "",
+      "error": "HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/auth/reset-password (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x74d50e182630>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    }
+  ],
+  "test_users": {},
+  "test_projects": []
+}

@@ -1,0 +1,211 @@
+{
+  "session_start": "2025-11-15T06:00:14.920453",
+  "session_end": "2025-11-15T06:00:16.473621",
+  "duration_seconds": 1.553168,
+  "statistics": {
+    "total": 20,
+    "passed": 10,
+    "failed": 3,
+    "errors": 6,
+    "skipped": 1,
+    "pass_rate": 50.0
+  },
+  "modules": {
+    "Auth": {
+      "PASS": 4,
+      "FAIL": 0,
+      "ERROR": 6,
+      "SKIP": 0
+    },
+    "Projects": {
+      "PASS": 1,
+      "FAIL": 3,
+      "ERROR": 0,
+      "SKIP": 0
+    },
+    "RMC": {
+      "PASS": 0,
+      "FAIL": 0,
+      "ERROR": 0,
+      "SKIP": 1
+    },
+    "RBAC": {
+      "PASS": 1,
+      "FAIL": 0,
+      "ERROR": 0,
+      "SKIP": 0
+    },
+    "Password Reset": {
+      "PASS": 4,
+      "FAIL": 0,
+      "ERROR": 0,
+      "SKIP": 0
+    }
+  },
+  "test_results": [
+    {
+      "timestamp": "2025-11-15T06:00:15.545752",
+      "module": "Auth",
+      "test_name": "Register System Admin",
+      "status": "PASS",
+      "details": "User already exists, logged in successfully",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.069359",
+      "module": "Auth",
+      "test_name": "Login with valid credentials",
+      "status": "PASS",
+      "details": "",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.395324",
+      "module": "Auth",
+      "test_name": "Login with invalid password",
+      "status": "PASS",
+      "details": "Correctly rejected with 401",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.400196",
+      "module": "Auth",
+      "test_name": "Forgot Password",
+      "status": "PASS",
+      "details": "Reset link sent (or email doesn't exist)",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.411041",
+      "module": "Auth",
+      "test_name": "Register project_manager",
+      "status": "ERROR",
+      "details": "",
+      "error": "Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.416118",
+      "module": "Auth",
+      "test_name": "Register quality_manager",
+      "status": "ERROR",
+      "details": "",
+      "error": "Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.422294",
+      "module": "Auth",
+      "test_name": "Register quality_engineer",
+      "status": "ERROR",
+      "details": "",
+      "error": "Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.427066",
+      "module": "Auth",
+      "test_name": "Register safety_manager",
+      "status": "ERROR",
+      "details": "",
+      "error": "Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.431870",
+      "module": "Auth",
+      "test_name": "Register contractor_supervisor",
+      "status": "ERROR",
+      "details": "",
+      "error": "Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.436729",
+      "module": "Auth",
+      "test_name": "Register watchman",
+      "status": "ERROR",
+      "details": "",
+      "error": "Expecting value: line 1 column 1 (char 0)"
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.442887",
+      "module": "Projects",
+      "test_name": "Create Project 1",
+      "status": "FAIL",
+      "details": "",
+      "error": "Unauthorized"
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.447662",
+      "module": "Projects",
+      "test_name": "Create Project 2",
+      "status": "FAIL",
+      "details": "",
+      "error": "Unauthorized"
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.452151",
+      "module": "Projects",
+      "test_name": "Create Project 3",
+      "status": "FAIL",
+      "details": "",
+      "error": "Unauthorized"
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.459237",
+      "module": "Projects",
+      "test_name": "List Projects",
+      "status": "PASS",
+      "details": "Found 1 projects",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.459288",
+      "module": "RMC",
+      "test_name": "Setup",
+      "status": "SKIP",
+      "details": "No test projects available",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.464250",
+      "module": "RBAC",
+      "test_name": "System Admin Access All Projects",
+      "status": "PASS",
+      "details": "Can access 1 projects",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.467087",
+      "module": "Password Reset",
+      "test_name": "Request Reset (existing email)",
+      "status": "PASS",
+      "details": "",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.469548",
+      "module": "Password Reset",
+      "test_name": "Request Reset (non-existing)",
+      "status": "PASS",
+      "details": "Correctly returns success (no enumeration)",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.471675",
+      "module": "Password Reset",
+      "test_name": "Reset with invalid token",
+      "status": "PASS",
+      "details": "Correctly rejected invalid token",
+      "error": ""
+    },
+    {
+      "timestamp": "2025-11-15T06:00:16.473575",
+      "module": "Password Reset",
+      "test_name": "Reset with weak password",
+      "status": "PASS",
+      "details": "Correctly rejected weak password",
+      "error": ""
+    }
+  ],
+  "test_users": {
+    "system_admin": "admin@testprosite.com"
+  },
+  "test_projects": []
+}

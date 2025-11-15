@@ -1,0 +1,21 @@
+{
+  "table": "project_settings",
+  "columns": [
+    "id",
+    "project_id",
+    "enable_material_vehicle_addon",
+    "vehicle_allowed_time_hours",
+    "send_time_warnings",
+    "enable_test_reminders",
+    "reminder_time",
+    "notify_project_admins",
+    "notify_quality_engineers",
+    "enable_whatsapp_notifications",
+    "enable_email_notifications",
+    "created_at",
+    "updated_at",
+    "updated_by"
+  ],
+  "row_count": 0,
+  "data": []
+}

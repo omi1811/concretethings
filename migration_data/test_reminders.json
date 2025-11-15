@@ -1,0 +1,19 @@
+{
+  "table": "test_reminders",
+  "columns": [
+    "id",
+    "cube_test_id",
+    "project_id",
+    "reminder_date",
+    "test_age_days",
+    "status",
+    "notification_sent_at",
+    "notified_user_ids",
+    "test_completed",
+    "completed_at",
+    "created_at",
+    "updated_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

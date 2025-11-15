@@ -130,10 +130,16 @@ class User(Base):
     # Company Association
     company_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("companies.id"), nullable=True)
     
-    # Global Roles (DigiQC-style hierarchy)
+    # Role-Based Access Control (RBAC)
+    # Values: system_admin, project_manager, quality_manager, safety_manager,
+    #         quality_engineer, safety_engineer, building_engineer, contractor_supervisor,
+    #         watchman, client, auditor, supplier
+    role: Mapped[str] = mapped_column(String(50), default="building_engineer", nullable=False)
+    
+    # Global Roles (Backward Compatibility - DEPRECATED)
     is_support_admin: Mapped[bool] = mapped_column(Integer, default=0)  # YOU - Super admin across all companies
     is_company_admin: Mapped[bool] = mapped_column(Integer, default=0)  # Company admin - manages projects
-    is_system_admin: Mapped[bool] = mapped_column(Integer, default=0)  # DEPRECATED - use is_support_admin
+    is_system_admin: Mapped[bool] = mapped_column(Integer, default=0)  # DEPRECATED - use role="system_admin"
     
     # User Details
     designation: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # Site Engineer, QC Manager, etc.
@@ -161,6 +167,7 @@ class User(Base):
             "email": self.email,
             "phone": self.phone,
             "fullName": self.full_name,
+            "role": self.role,
             "designation": self.designation,
             "profilePhoto": self.profile_photo,
             "companyId": self.company_id,

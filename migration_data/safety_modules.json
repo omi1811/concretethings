@@ -1,0 +1,19 @@
+{
+  "table": "safety_modules",
+  "columns": [
+    "id",
+    "company_id",
+    "project_id",
+    "module_type",
+    "module_name",
+    "description",
+    "icon",
+    "is_active",
+    "display_order",
+    "created_at",
+    "updated_at",
+    "created_by"
+  ],
+  "row_count": 0,
+  "data": []
+}

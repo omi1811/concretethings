@@ -1,0 +1,33 @@
+{
+  "table": "tbt_sessions",
+  "columns": [
+    "id",
+    "project_id",
+    "conductor_id",
+    "conductor_name",
+    "conductor_role",
+    "session_date",
+    "topic",
+    "topic_category",
+    "location",
+    "activity",
+    "duration_minutes",
+    "key_points",
+    "hazards_discussed",
+    "ppe_required",
+    "emergency_contacts",
+    "photo_filename",
+    "photo_url",
+    "weather_conditions",
+    "special_notes",
+    "status",
+    "is_completed",
+    "completed_at",
+    "qr_code_data",
+    "qr_code_expires_at",
+    "created_at",
+    "updated_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

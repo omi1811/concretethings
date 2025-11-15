@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
-import { batchAPI, cubeTestAPI, labAPI, pourActivityAPI } from '@/lib/api';
+import { batchAPI, cubeTestAPI, labAPI, pourActivityAPI } from '@/lib/api-optimized';
 import CubeCastingModal from '@/components/CubeCastingModal';
 
 export default function NewBatchPage() {

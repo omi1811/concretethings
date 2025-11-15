@@ -1,0 +1,23 @@
+{
+  "table": "safety_contractor_notifications",
+  "columns": [
+    "id",
+    "company_id",
+    "project_id",
+    "notification_type",
+    "notification_channel",
+    "recipient_contractor",
+    "recipient_user",
+    "recipient_phone",
+    "recipient_email",
+    "nc_id",
+    "action_id",
+    "subject",
+    "message",
+    "sent_at",
+    "delivery_status",
+    "read_at"
+  ],
+  "row_count": 0,
+  "data": []
+}

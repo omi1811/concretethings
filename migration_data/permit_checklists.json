@@ -1,0 +1,16 @@
+{
+  "table": "permit_checklists",
+  "columns": [
+    "id",
+    "permit_id",
+    "item_description",
+    "is_mandatory",
+    "is_verified",
+    "verified_by",
+    "verified_at",
+    "verification_notes",
+    "verification_photo"
+  ],
+  "row_count": 0,
+  "data": []
+}
