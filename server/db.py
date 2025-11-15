@@ -24,9 +24,25 @@ class Base(DeclarativeBase):
 connect_args = {}
 if DATABASE_URL.startswith('sqlite'):
     connect_args = {"check_same_thread": False}
+elif DATABASE_URL.startswith('postgresql'):
+    # Force IPv4 for Supabase connection (Render doesn't support IPv6)
+    connect_args = {
+        "connect_timeout": 10,
+        "options": "-c search_path=public"
+    }
+
+# If using PostgreSQL with Supabase, ensure we use pooler connection string
+# Replace direct connection with pooler (IPv4 only)
+database_url = DATABASE_URL
+if 'supabase.co' in DATABASE_URL and 'pooler' not in DATABASE_URL:
+    # Use IPv4 pooler connection
+    database_url = DATABASE_URL.replace(
+        'db.lsqvxfaonbvqvlwrhsby.supabase.co',
+        'aws-0-ap-south-1.pooler.supabase.com'
+    ).replace(':5432', ':6543')
 
 engine = create_engine(
-    DATABASE_URL, 
+    database_url, 
     echo=False, 
     connect_args=connect_args,
     pool_pre_ping=True  # Verify connections before using
