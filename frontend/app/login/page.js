@@ -88,18 +88,28 @@ export default function LoginPage() {
     setLoading(true);
     
     try {
-      const result = await authAPI.login(formData.email.trim().toLowerCase(), formData.password);
-      
-      if (result.success && result.data) {
-        localStorage.setItem('auth_token', result.data.access_token);
-        if (rememberMe) localStorage.setItem('remember_email', formData.email);
-        else localStorage.removeItem('remember_email');
-        if (result.data.user) await saveUserData('current_user', result.data.user);
-        setAlert({ type: 'success', message: 'Login successful! Redirecting...' });
-        setTimeout(() => router.push('/dashboard'), 500);
-      } else {
-        setAlert({ type: 'error', message: result.error || 'Invalid credentials' });
+      const credentials = {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      };
+
+      const response = await authAPI.login(credentials);
+
+      if (!response?.access_token) {
+        throw new Error(response?.error || 'Invalid credentials');
       }
+
+      // Preserve legacy token key usage alongside the shared API helper storage.
+      localStorage.setItem('auth_token', response.access_token);
+      if (rememberMe) localStorage.setItem('remember_email', formData.email);
+      else localStorage.removeItem('remember_email');
+
+      if (response.user) {
+        await saveUserData(response);
+      }
+
+      setAlert({ type: 'success', message: 'Login successful! Redirecting...' });
+      setTimeout(() => router.push('/'), 500);
     } catch (err) {
       setAlert({ type: 'error', message: err.message || 'Login failed' });
     } finally {
@@ -108,9 +118,9 @@ export default function LoginPage() {
   }, [formData, rememberMe, validateForm, router]);
 
   const demoCredentials = useMemo(() => [
-    { label: 'Test User', email: 'test@example.com', password: 'test123' },
-    { label: 'Admin', email: 'admin@testprosite.com', password: 'admin123' },
-    { label: 'Super Admin', email: 'shrotrio@gmail.com', password: 'admin123' },
+    { label: 'System Admin', email: 'admin@prosite.com', password: 'Admin@2025' },
+    { label: 'Project Manager', email: 'pm@prosite.com', password: 'PM@2025' },
+    { label: 'Quality Manager', email: 'qm@prosite.com', password: 'QM@2025' },
   ], []);
 
   const fillDemo = useCallback((email, password) => {
@@ -199,7 +209,7 @@ export default function LoginPage() {
               ))}
             </div>
             <p className="text-xs text-gray-500 text-center mt-3">
-              Click any button above to auto-fill credentials, then click Sign In
+              Local seed users are created via <code>init_database.py</code>. Use these pre-filled accounts or create your own from the admin panel.
             </p>
           </div>
           

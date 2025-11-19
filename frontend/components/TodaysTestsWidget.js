@@ -30,12 +30,15 @@ export default function TodaysTestsWidget() {
       setError('');
       
       const result = await cubeTestAPI.getRemindersToday();
-      
-      if (result.success) {
-        setReminders(result.data.reminders || []);
-      } else {
-        setError('Failed to load reminders');
+
+      if (result?.success === false) {
+        setError(result?.error || 'Failed to load reminders');
+        setReminders([]);
+        return;
       }
+
+      const remindersData = result?.reminders || result?.data?.reminders || [];
+      setReminders(Array.isArray(remindersData) ? remindersData : []);
     } catch (err) {
       console.error('Error fetching reminders:', err);
       setError('Error loading test reminders');

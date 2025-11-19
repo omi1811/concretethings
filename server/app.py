@@ -11,8 +11,8 @@ from flask_cors import CORS
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 from PIL import Image
-
-from .db import init_db, session_scope
+from db import init_db, session_scope
+# from .db import init_db, session_scope
 from .models import MixDesign
 from .config import get_config
 from .auth import auth_bp, init_jwt
@@ -40,13 +40,11 @@ from .training_qr_attendance import training_qr_bp
 from .safety_inductions import safety_induction_bp
 from .concrete_nc_api import concrete_nc_bp
 from .projects import projects_bp
-# TODO: These blueprints need db.session refactoring to use session_scope()
-# from .incident_investigation import incident_bp
-# from .safety_audits import audit_bp
-# from .ppe_tracking import ppe_bp
-# from .geofence_api import geofence_bp
-# TODO: Handover register needs database migration before enabling
-# from .handover_register import handover_bp
+from .incident_investigation import incident_bp
+from .safety_audits import audit_bp
+from .ppe_tracking import ppe_bp
+from .geofence_api import geofence_bp
+from .handover_register import handover_bp
 
 
 # Setup logging
@@ -158,22 +156,20 @@ def create_app() -> Flask:
     # Register Projects blueprint (listing and management)
     app.register_blueprint(projects_bp)
     
-    # TODO: These blueprints temporarily disabled - need db.session refactoring to use session_scope()
     # Register Incident Investigation blueprint (OSHA compliant incident reporting)
-    # app.register_blueprint(incident_bp)
+    app.register_blueprint(incident_bp)
     
-    # TODO: These blueprints temporarily disabled - need db.session refactoring to use session_scope()
     # Register Safety Audits blueprint (ISO 45001 compliant audits)
-    # app.register_blueprint(audit_bp)
+    app.register_blueprint(audit_bp)
     
     # Register PPE Tracking blueprint (PPE issuance, return, damage, inventory)
-    # app.register_blueprint(ppe_bp)
+    app.register_blueprint(ppe_bp)
     
     # Register Geo-fencing blueprint (location-based access control)
-    # app.register_blueprint(geofence_bp)
+    app.register_blueprint(geofence_bp)
     
-    # TODO: Register handover register blueprint after database migration
-    # app.register_blueprint(handover_bp)
+    # Register Handover Register blueprint (work completion handovers)
+    app.register_blueprint(handover_bp)
     
     # Enable CORS for commercial deployment
     CORS(app, resources={
@@ -225,14 +221,20 @@ def create_app() -> Flask:
     if os.environ.get('FLASK_ENV') == 'development':
         init_db()
 
-    @app.route("/")
-    def index() -> Any:
-        # Serve the frontend index
-        return send_from_directory(app.static_folder, "index.html")
-    
+    def _health_payload():
+        return {"status": "healthy", "service": "prosite-api"}
+
+    @app.route('/', methods=['GET'])
+    def root():
+        return jsonify(_health_payload())
+
     @app.route('/health', methods=['GET'])
     def health():
-        return jsonify({"status": "healthy", "service": "prosite-api"})
+        return jsonify(_health_payload())
+
+    @app.route('/api/health', methods=['GET'])
+    def api_health():
+        return jsonify(_health_payload())
     
     # Multi-app subscription endpoint
     @app.route('/api/user/app-access', methods=['GET'])

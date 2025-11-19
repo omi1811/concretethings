@@ -64,6 +64,100 @@ def session_scope() -> Iterator[scoped_session]:
 
 
 def init_db() -> None:
-    from . import models  # noqa: F401 - ensure models are imported
+    """
+    Ensure ORM models are registered so SQLAlchemy can create tables.
 
+    We attempt an absolute import of `server.models` first (works in normal package mode).
+    If that fails (odd execution mode), we try a relative import as a fallback.
+    This import is done inside the function to avoid package-context issues and
+    to reduce circular-import problems.
+    """
+    import importlib
+
+    # Try multiple import strategies to be resilient to different invocation modes
+    excs = {}
+    # 1) Preferred absolute import (package mode)
+    try:
+        importlib.import_module("server.models")  # noqa: F401
+        models_imported = True
+    except Exception as e:
+        excs['server.models'] = e
+        models_imported = False
+
+    # 2) Try bare module import (when running with PYTHONPATH set)
+    if not models_imported:
+        try:
+            importlib.import_module("models")  # noqa: F401
+            models_imported = True
+        except Exception as e:
+            excs['models'] = e
+
+    # 3) As a last resort, attempt to load the file directly by path
+    if not models_imported:
+        try:
+            models_path = Path(__file__).resolve().parent / "models.py"
+            if models_path.exists():
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("server.models", str(models_path))
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)  # type: ignore[attr-defined]
+                # Register in sys.modules so SQLAlchemy can find the classes
+                import sys
+                sys.modules["server.models"] = module
+                models_imported = True
+            else:
+                excs['file'] = FileNotFoundError(f"{models_path} not found")
+        except Exception as e:
+            excs['file'] = e
+
+    if not models_imported:
+        # Build helpful error message including all attempts
+        messages = [f"Tried import '{k}' and got: {v!r}" for k, v in excs.items()]
+        raise ImportError(
+            "Failed to import models for database initialization. "
+            "Tried multiple import strategies (package absolute, bare module, direct file).\n\n"
+            + "\n".join(messages)
+            + "\n\nEnsure 'server/__init__.py' exists and run Flask from the project root "
+            "with FLASK_APP set to 'server.app:app' (or use 'flask --app server.app run')."
+        )
+
+    # Now create tables after the models are imported and registered on Base
     Base.metadata.create_all(bind=engine)
+
+
+
+# Compatibility layer for db.session pattern (used in some blueprints)
+class _DBSession:
+    """
+    Compatibility wrapper to provide db.session interface for legacy code.
+    Maps to the scoped_session SessionLocal.
+    """
+    @property
+    def query(self):
+        return SessionLocal().query
+    
+    def add(self, instance):
+        return SessionLocal().add(instance)
+    
+    def commit(self):
+        return SessionLocal().commit()
+    
+    def rollback(self):
+        return SessionLocal().rollback()
+    
+    def flush(self):
+        return SessionLocal().flush()
+    
+    def close(self):
+        return SessionLocal().close()
+    
+    def remove(self):
+        return SessionLocal.remove()
+
+
+# Create compatibility db object
+class _DB:
+    session = _DBSession()
+
+
+db = _DB()

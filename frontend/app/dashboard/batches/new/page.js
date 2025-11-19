@@ -8,15 +8,17 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
-import { batchAPI, cubeTestAPI, labAPI, pourActivityAPI } from '@/lib/api-optimized';
+import { batchAPI, cubeTestAPI, labAPI, pourActivityAPI, projectsAPI } from '@/lib/api-optimized';
 import CubeCastingModal from '@/components/CubeCastingModal';
 
 export default function NewBatchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const projectId = searchParams.get('project_id');
+  const queryProjectId = searchParams.get('project_id');
   const pourIdFromQuery = searchParams.get('pourId');
   
+  const [activeProjectId, setActiveProjectId] = useState('');
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -25,6 +27,7 @@ export default function NewBatchPage() {
   const [labs, setLabs] = useState([]);
   const [pourActivities, setPourActivities] = useState([]);
   const [selectedPour, setSelectedPour] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   const [formData, setFormData] = useState({
     batchNumber: '',
@@ -36,43 +39,170 @@ export default function NewBatchPage() {
     deliveryTime: '',
     slump: '',
     temperature: '',
-    vehicleNumber: '',
-    driverName: '',
+    // vehicleNumber: '', // Removed as per requirement
     location: '',
     remarks: '',
     pourActivityId: pourIdFromQuery || ''
   });
 
+  // Check authentication first
   useEffect(() => {
-    if (projectId) {
-      loadPourActivities();
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token') || 
+                    localStorage.getItem('access_token') || 
+                    localStorage.getItem('auth_token');
+              {/*
+              <Input
+                label="Vehicle Number"
+                name="vehicleNumber"
+                value={formData.vehicleNumber}
+                onChange={handleChange}
+                placeholder="e.g., DL-01-AB-1234"
+              />
+              */}
+      setIsAuthenticated(true);
     }
+  }, [router]);
+
+  useEffect(() => {
+    // Only load projects if authenticated
+    if (!isAuthenticated) return;
+    
+    if (queryProjectId) {
+      setActiveProjectId(queryProjectId);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('currentProjectId', queryProjectId);
+      }
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      const storedProjectId =
+        localStorage.getItem('currentProjectId') ||
+        localStorage.getItem('project_id') ||
+        localStorage.getItem('projectId');
+      if (storedProjectId) {
+        setActiveProjectId(storedProjectId);
+      }
+    }
+  }, [queryProjectId, isAuthenticated]);
+
+  useEffect(() => {
+    // Only fetch projects if authenticated
+    if (!isAuthenticated) return;
+    
+    let isMounted = true;
+
+    async function fetchProjects() {
+      try {
+        const result = await projectsAPI.getAll();
+        if (!isMounted) {
+          return;
+        }
+        const projectList = Array.isArray(result?.projects)
+          ? result.projects
+          : Array.isArray(result?.data?.projects)
+            ? result.data.projects
+            : Array.isArray(result)
+              ? result
+              : [];
+        setProjects(projectList);
+
+        if (!queryProjectId && projectList.length > 0) {
+          let resolvedId = '';
+          setActiveProjectId((prev) => {
+            if (prev) {
+              return prev;
+            }
+            const firstProject = projectList[0] || {};
+            const candidate =
+              firstProject.id ??
+              firstProject.projectId ??
+              firstProject.project_id;
+            if (!candidate) {
+              return prev;
+            }
+            resolvedId = String(candidate);
+            return resolvedId;
+          });
+          if (resolvedId && typeof window !== 'undefined') {
+            localStorage.setItem('currentProjectId', resolvedId);
+          }
+        }
+      } catch (fetchError) {
+        console.error('Error loading projects:', fetchError);
+      }
+    }
+
+    fetchProjects();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [queryProjectId, isAuthenticated]);
+
+  useEffect(() => {
+    if (activeProjectId) {
+      loadPourActivities(activeProjectId);
+    } else {
+      setPourActivities([]);
+      setSelectedPour(null);
+      setFormData((prev) => ({ ...prev, pourActivityId: '' }));
+    }
+  }, [activeProjectId]);
+
+  useEffect(() => {
     if (pourIdFromQuery) {
       loadPourActivity(pourIdFromQuery);
     }
-  }, [projectId, pourIdFromQuery]);
+  }, [pourIdFromQuery]);
 
-  async function loadPourActivities() {
+  const batchesListHref = activeProjectId
+    ? `/dashboard/batches?project_id=${activeProjectId}`
+    : '/dashboard/batches';
+  const cubeTestsHref = activeProjectId
+    ? `/dashboard/cube-tests?project_id=${activeProjectId}`
+    : '/dashboard/cube-tests';
+
+  async function loadPourActivities(projectIdToLoad) {
+    if (!projectIdToLoad) {
+      return;
+    }
     try {
       const result = await pourActivityAPI.getAll({
-        projectId,
+        projectId: projectIdToLoad,
         status: 'in_progress'
       });
-      if (result.success) {
+      if (result?.success) {
         setPourActivities(result.data.pourActivities || []);
+      } else if (Array.isArray(result?.data?.pourActivities)) {
+        setPourActivities(result.data.pourActivities);
+      } else if (Array.isArray(result?.pourActivities)) {
+        setPourActivities(result.pourActivities);
+      } else {
+        setPourActivities([]);
       }
     } catch (error) {
       console.error('Error loading pour activities:', error);
+      setPourActivities([]);
     }
   }
 
   async function loadPourActivity(pourId) {
     try {
       const result = await pourActivityAPI.getById(pourId);
-      if (result.success) {
-        const pour = result.data.pourActivity;
+      const pour =
+        result?.data?.pourActivity ??
+        result?.pourActivity ??
+        result?.data ??
+        null;
+
+      if (result?.success === false && !pour) {
+        return;
+      }
+
+      if (pour) {
         setSelectedPour(pour);
-        // Auto-populate fields from pour activity
         setFormData(prev => ({
           ...prev,
           grade: pour.designGrade || prev.grade,
@@ -83,6 +213,21 @@ export default function NewBatchPage() {
       console.error('Error loading pour activity:', error);
     }
   }
+
+  const handleProjectSelect = (event) => {
+    const value = event.target.value;
+    setActiveProjectId(value);
+    if (typeof window !== 'undefined') {
+      if (value) {
+        localStorage.setItem('currentProjectId', value);
+      } else {
+        localStorage.removeItem('currentProjectId');
+      }
+    }
+    setPourActivities([]);
+    setSelectedPour(null);
+    setFormData(prev => ({ ...prev, pourActivityId: '' }));
+  };
 
   const handlePourChange = (e) => {
     const pourId = e.target.value;
@@ -113,48 +258,76 @@ export default function NewBatchPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    const numericProjectId = activeProjectId ? parseInt(activeProjectId, 10) : NaN;
+    if (Number.isNaN(numericProjectId)) {
+      setError('Select a project before creating a batch.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const result = await batchAPI.create(formData);
-      
-      if (result.success) {
+      const result = await batchAPI.create({
+        ...formData,
+        projectId: numericProjectId
+      });
+      const creationSuccess = result?.success ?? !result?.error;
+      if (creationSuccess) {
         setSuccess('Batch created successfully!');
-        
-        // Fetch batch completion summary
-        const batchId = result.data.batch?.id || result.data.id;
-        if (batchId && projectId) {
-          const completionResult = await batchAPI.complete(batchId, projectId);
-          
-          if (completionResult.success) {
-            // Fetch available labs
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
-            if (user.companyId) {
-              const labsResult = await labAPI.getAll(user.companyId);
-              if (labsResult.success) {
-                setLabs(labsResult.data.labs || []);
+
+        const batchPayload = result?.data ?? result;
+        const batchId =
+          batchPayload?.batch?.id ??
+          batchPayload?.batchId ??
+          batchPayload?.id;
+
+        if (batchId) {
+          // Set the batch summary and open the cube casting modal regardless of whether completion succeeds.
+          const provisionalBatch = batchPayload?.batch ?? batchPayload ?? { id: batchId };
+          setBatchSummary({
+            ...(provisionalBatch || {}),
+            batchId: batchId,
+            projectId: numericProjectId
+          });
+          setShowCubeCastingModal(true);
+
+          // Attempt to complete the batch (may fail for some backends) and fetch labs for modal
+          (async () => {
+            try {
+              const completionResult = await batchAPI.complete(batchId, numericProjectId);
+              const completionSuccess = completionResult?.success ?? !completionResult?.error;
+              if (completionSuccess) {
+                const completionData = completionResult?.data ?? completionResult;
+                const completedBatch = completionData?.batch ?? completionData?.batchSummary ?? completionData;
+                setBatchSummary({ ...(completedBatch || {}), projectId: numericProjectId });
               }
+            } catch (completionError) {
+              console.error('Error completing batch:', completionError);
             }
-            
-            // Show cube casting modal
-            setBatchSummary({
-              ...completionResult.data.batch,
-              projectId: projectId
-            });
-            setShowCubeCastingModal(true);
-          } else {
-            // If completion fails, just redirect
-            setTimeout(() => {
-              router.push('/dashboard/batches?project_id=' + projectId);
-            }, 1500);
-          }
-        } else {
-          setTimeout(() => {
-            router.push('/dashboard/batches?project_id=' + projectId);
-          }, 1500);
+
+            try {
+              const user = JSON.parse(localStorage.getItem('user') || '{}');
+              if (user.companyId) {
+                const labsResult = await labAPI.getAll(user.companyId);
+                if (labsResult?.success) {
+                  setLabs(labsResult.data.labs || []);
+                } else if (Array.isArray(labsResult?.labs)) {
+                  setLabs(labsResult.labs);
+                }
+              }
+            } catch (labError) {
+              console.error('Error loading labs:', labError);
+            }
+          })();
+          return;
         }
+
+        // No batchId available — redirect back to list after a short delay
+        setTimeout(() => {
+          router.push(batchesListHref);
+        }, 1500);
       } else {
-        setError(result.error || result.message || 'Failed to create batch');
+        setError(result?.error || result?.message || 'Failed to create batch');
       }
     } catch (err) {
       console.error('Error creating batch:', err);
@@ -168,9 +341,9 @@ export default function NewBatchPage() {
     try {
       const result = await cubeTestAPI.bulkCreate(cubeData);
       
-      if (result.success) {
+      if (result?.success ?? !result?.error) {
         alert(`Successfully created ${result.data.cube_tests?.length || 0} cube test sets!`);
-        router.push('/dashboard/cube-tests?project_id=' + projectId);
+        router.push(cubeTestsHref);
       } else {
         throw new Error(result.error || 'Failed to create cube tests');
       }
@@ -182,14 +355,28 @@ export default function NewBatchPage() {
 
   const handleSkipCubeCasting = () => {
     setShowCubeCastingModal(false);
-    router.push('/dashboard/batches?project_id=' + projectId);
+    router.push(batchesListHref);
   };
+
+  // Show loading while checking authentication
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
+            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
+          </div>
+          <p className="mt-4 text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/dashboard/batches">
+        <Link href={batchesListHref}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
@@ -214,6 +401,42 @@ export default function NewBatchPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Project</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {projects.length > 0 ? (
+              <Select
+                label="Select Project"
+                value={activeProjectId || ''}
+                onChange={handleProjectSelect}
+                required
+              >
+                <option value="">Select a project</option>
+                {projects.map((project) => {
+                  const idValue = project?.id ?? project?.projectId ?? project?.project_id;
+                  if (!idValue) {
+                    return null;
+                  }
+                  const idString = String(idValue);
+                  const code = project?.projectCode ?? project?.project_code;
+                  const label = code ? `${code} - ${project.name}` : project.name;
+                  return (
+                    <option key={idString} value={idString}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </Select>
+            ) : (
+              <p className="text-sm text-gray-600">
+                No projects available yet. Ask your administrator to add one before creating batches.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Pour Activity Linking (NEW) */}
         <Card>
           <CardHeader>
@@ -225,7 +448,7 @@ export default function NewBatchPage() {
           <CardContent className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
               <p className="text-sm text-blue-800">
-                💡 <strong>Tip:</strong> If this batch is part of a larger pour (e.g., multiple vehicles for one slab),
+                {/* 💡 <strong>Tip:</strong> If this batch is part of a larger pour (e.g., multiple vehicles for one slab), */}
                 link it to a pour activity. This groups batches together for single cube test sets.
               </p>
             </div>
@@ -351,6 +574,7 @@ export default function NewBatchPage() {
                 onChange={handleChange}
                 required
               />
+              {/*
               <Input
                 label="Vehicle Number"
                 name="vehicleNumber"
@@ -358,13 +582,8 @@ export default function NewBatchPage() {
                 onChange={handleChange}
                 placeholder="e.g., DL-01-AB-1234"
               />
-              <Input
-                label="Driver Name"
-                name="driverName"
-                value={formData.driverName}
-                onChange={handleChange}
-                placeholder="e.g., John Doe"
-              />
+              */}
+              {/* Driver Name removed from form intentionally */}
               <Input
                 label="Location"
                 name="location"
@@ -429,12 +648,12 @@ export default function NewBatchPage() {
 
         {/* Actions */}
         <div className="flex justify-end gap-4">
-          <Link href={`/dashboard/batches?project_id=${projectId}`}>
+          <Link href={batchesListHref}>
             <Button type="button" variant="outline">
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading || !activeProjectId}>
             {loading ? 'Creating...' : 'Create Batch'}
           </Button>
         </div>

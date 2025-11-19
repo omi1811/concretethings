@@ -405,7 +405,8 @@ def update_vendor(vendor_id):
             if 'phone' in data:
                 vendor.phone = data['phone']
             if 'email' in data:
-                vendor.email = data['email']
+                # model uses contact_email field
+                vendor.contact_email = data['email']
             if 'address' in data:
                 vendor.address = data['address']
             if 'city' in data:

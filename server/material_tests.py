@@ -346,11 +346,11 @@ def get_material_test(test_id):
             # Add user names
             if test.entered_by:
                 enterer = session.query(User).filter_by(id=test.entered_by).first()
-                test_dict['entered_by_name'] = enterer.name if enterer else None
+                test_dict['entered_by_name'] = enterer.full_name if enterer else None
             
             if test.verified_by:
                 verifier = session.query(User).filter_by(id=test.verified_by).first()
-                test_dict['verified_by_name'] = verifier.name if verifier else None
+                test_dict['verified_by_name'] = verifier.full_name if verifier else None
             
             return jsonify({
                 "success": True,

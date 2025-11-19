@@ -222,7 +222,7 @@ def get_third_party_tests():
                     
                     if batch and batch.mix_design_id:
                         mix = session.query(MixDesign).filter_by(id=batch.mix_design_id).first()
-                        test_dict['mix_design_grade'] = mix.grade if mix else None
+                        test_dict['mix_design_grade'] = mix.concrete_grade if mix else None
                 
                 result.append(test_dict)
             
@@ -283,18 +283,19 @@ def get_third_party_test(test_id):
                         if mix:
                             test_dict['mix_design'] = {
                                 'id': mix.id,
-                                'name': mix.name,
-                                'grade': mix.grade
+                                'mixDesignId': mix.mix_design_id,
+                                'projectName': mix.project_name,
+                                'grade': mix.concrete_grade
                             }
             
             # Add user names
             if test.created_by:
                 creator = session.query(User).filter_by(id=test.created_by).first()
-                test_dict['created_by_name'] = creator.name if creator else None
+                test_dict['created_by_name'] = creator.full_name if creator else None
             
             if test.verified_by:
                 verifier = session.query(User).filter_by(id=test.verified_by).first()
-                test_dict['verified_by_name'] = verifier.name if verifier else None
+                test_dict['verified_by_name'] = verifier.full_name if verifier else None
             
             return jsonify({
                 "success": True,
@@ -520,7 +521,7 @@ def create_third_party_test():
                     'ncr_number': test.ncr_number,
                     'project_name': project.name if project else "Unknown",
                     'vendor_name': f"Third-Party Lab: {lab.lab_name}",
-                    'vendor_email': lab.email if lab.email else None,
+                    'vendor_email': lab.contact_email if getattr(lab, 'contact_email', None) else None,
                     'casting_date': sample_collection_date.strftime("%Y-%m-%d"),
                     'testing_date': testing_date.strftime("%Y-%m-%d")
                 }

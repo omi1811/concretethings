@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
       const result = await authAPI.forgotPassword(email.trim().toLowerCase());
       
       if (result.success) {
-        setMessage('Password reset instructions have been sent to your email. Please check your inbox.');
+        setMessage(result.message || 'Password reset instructions have been sent to your email. Please check your inbox.');
         setEmail('');
       } else {
         setError(result.error || 'Failed to send reset email. Please try again.');

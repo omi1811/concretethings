@@ -53,15 +53,16 @@ export default function NewPourActivityPage() {
       };
 
       const result = await pourActivityAPI.create(payload);
-      
-      if (result.success) {
-        // Show success message
+      const pourActivity = result?.data?.pourActivity || result?.pourActivity;
+
+      if (pourActivity) {
         alert('Pour activity created successfully!');
-        // Redirect to pour detail page
-        router.push(`/dashboard/pour-activities/${result.data.pourActivity.id}`);
-      } else {
-        alert('Error creating pour activity: ' + (result.error || 'Unknown error'));
+        router.push(`/dashboard/pour-activities/${pourActivity.id}`);
+        return;
       }
+
+      const message = result?.error || result?.message || 'Unknown error creating pour activity';
+      alert(`Error creating pour activity: ${message}`);
     } catch (error) {
       console.error('Error creating pour activity:', error);
       alert('Error creating pour activity. Please try again.');

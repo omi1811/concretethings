@@ -16,7 +16,7 @@ export function SyncStatus() {
     loadPendingCount();
     
     // Listen to sync events
-    syncManager.onSyncStatusChange((status) => {
+    const unsubscribe = syncManager.onSyncStatusChange((status) => {
       if (status.status === 'syncing') {
         setIsSyncing(true);
         setSyncProgress(status);
@@ -33,7 +33,12 @@ export function SyncStatus() {
     // Refresh count every 30 seconds
     const interval = setInterval(loadPendingCount, 30000);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
   
   async function loadPendingCount() {

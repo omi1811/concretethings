@@ -50,9 +50,8 @@ export default function QuickEntryBatchPage() {
         projectId,
         status: 'in_progress'
       });
-      if (result.success) {
-        setPourActivities(result.data.pourActivities || []);
-      }
+      const activities = result?.data?.pourActivities || result?.pourActivities || [];
+      setPourActivities(Array.isArray(activities) ? activities : []);
     } catch (error) {
       console.error('Error loading pour activities:', error);
     }
@@ -61,8 +60,8 @@ export default function QuickEntryBatchPage() {
   async function loadPourActivity(pourId) {
     try {
       const result = await pourActivityAPI.getById(pourId);
-      if (result.success) {
-        const pour = result.data.pourActivity;
+      const pour = result?.data?.pourActivity || result?.pourActivity;
+      if (pour) {
         setSelectedPour(pour);
         setFormData(prev => ({
           ...prev,

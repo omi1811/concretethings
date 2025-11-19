@@ -9,19 +9,51 @@ Use Cases:
 """
 
 from flask import Blueprint, jsonify, request
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from datetime import datetime
 import pandas as pd
 import io
-from server.models import BatchRegister, Project, RMCVendor, db
+import re
+from server.models import BatchRegister, Project, RMCVendor, MixDesign, User, db
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 batch_import_bp = Blueprint('batch_import', __name__, url_prefix='/api/batches')
 
 
+def _get_current_user():
+    identity = get_jwt_identity()
+    if identity is None:
+        return None
+    try:
+        user_id = int(identity)
+    except (TypeError, ValueError):
+        return None
+    return db.session.query(User).filter_by(id=user_id).first()
+
+
+def _slugify(value: str) -> str:
+    if not value:
+        return 'placeholder'
+    cleaned = re.sub(r'[^a-zA-Z0-9]+', '-', value).strip('-').lower()
+    return cleaned or 'placeholder'
+
+
+def _grade_to_psi(grade: str) -> int:
+    if not grade:
+        return 4350  # Default to ~M30 strength
+    digits = ''.join(ch for ch in grade if ch.isdigit())
+    if not digits:
+        return 4350
+    try:
+        m_value = int(digits)
+        return int(round(m_value * 145.038))  # 1 MPa ≈ 145.038 psi
+    except ValueError:
+        return 4350
+
+
 @batch_import_bp.route('/quick-entry', methods=['POST'])
 @jwt_required()
-def quick_entry_batch(current_user):
+def quick_entry_batch():
     """
     Quick batch entry for sites where vehicle entry is managed by security.
     Minimal fields - focuses only on QC-relevant data.
@@ -43,22 +75,79 @@ def quick_entry_batch(current_user):
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
+        current_user = _get_current_user()
+        if not current_user:
+            return jsonify({"error": "User not found"}), 404
         
-        # Validate required fields
-        required = ['projectId', 'vehicleNumber', 'vendorName', 'grade', 'quantityReceived']
+        # Validate required fields for quick entry. vehicleNumber is optional
+        # because some full-form flows (QC-entered) do not collect vehicle numbers.
+        required = ['projectId', 'vendorName', 'grade', 'quantityReceived']
         missing = [f for f in required if not data.get(f)]
         if missing:
             return jsonify({"error": f"Missing required fields: {', '.join(missing)}"}), 400
         
+        try:
+            project_id = int(data['projectId'])
+        except (TypeError, ValueError):
+            return jsonify({"error": "projectId must be numeric"}), 400
+
         # Verify project exists
-        project = db.session.query(Project).filter_by(id=data['projectId']).first()
+        project = db.session.query(Project).filter_by(id=project_id).first()
         if not project:
             return jsonify({"error": "Project not found"}), 404
         
+        vendor_name = data['vendorName'].strip()
+        vendor = db.session.query(RMCVendor).filter_by(
+            project_id=project_id,
+            vendor_name=vendor_name,
+            is_deleted=False
+        ).first()
+
+        if not vendor:
+            slug = _slugify(vendor_name)
+            vendor = RMCVendor(
+                vendor_name=vendor_name,
+                company_id=project.company_id,
+                project_id=project_id,
+                contact_person_name=vendor_name,
+                contact_phone='0000000000',
+                contact_email=f"{slug}@placeholder.local",
+                is_active=1,
+                is_approved=1,
+                created_by=current_user.id if current_user else None
+            )
+            db.session.add(vendor)
+            db.session.flush()
+
+        grade = data['grade'].strip()
+        mix_design = db.session.query(MixDesign).filter(
+            MixDesign.project_id == project_id,
+            MixDesign.is_deleted == False,
+            or_(
+                MixDesign.concrete_grade == grade,
+                MixDesign.mix_design_id == grade
+            )
+        ).first()
+
+        if not mix_design:
+            mix_design_identifier = f"QUICK-{_slugify(grade)}-{int(datetime.utcnow().timestamp())}"
+            mix_design = MixDesign(
+                project_id=project_id,
+                rmc_vendor_id=vendor.id,
+                project_name=project.name,
+                mix_design_id=mix_design_identifier,
+                specified_strength_psi=_grade_to_psi(grade),
+                concrete_grade=grade,
+                is_approved=1,
+                uploaded_by=current_user.id if current_user else None
+            )
+            db.session.add(mix_design)
+            db.session.flush()
+
         # Auto-generate batch number
         last_batch = db.session.query(BatchRegister)\
-            .filter_by(project_id=data['projectId'])\
+            .filter_by(project_id=project_id)\
             .order_by(BatchRegister.id.desc())\
             .first()
         
@@ -74,44 +163,75 @@ def quick_entry_batch(current_user):
         # Parse delivery datetime
         delivery_date = data.get('deliveryDate', datetime.now().date().isoformat())
         delivery_time = data.get('deliveryTime', datetime.now().strftime('%H:%M'))
-        delivery_datetime = datetime.fromisoformat(f"{delivery_date}T{delivery_time}:00")
+        try:
+            delivery_datetime = datetime.fromisoformat(f"{delivery_date}T{delivery_time}:00")
+        except ValueError:
+            return jsonify({"error": "Invalid delivery date/time format"}), 400
+
+        try:
+            quantity_received = float(data['quantityReceived'])
+        except (TypeError, ValueError):
+            return jsonify({"error": "quantityReceived must be numeric"}), 400
+
+        slump_value = data.get('slump')
+        if slump_value not in (None, ''):
+            try:
+                slump_value = float(slump_value)
+            except (TypeError, ValueError):
+                return jsonify({"error": "slump must be numeric"}), 400
+        else:
+            slump_value = None
+
+        temperature_value = data.get('temperature')
+        if temperature_value not in (None, ''):
+            try:
+                temperature_value = float(temperature_value)
+            except (TypeError, ValueError):
+                return jsonify({"error": "temperature must be numeric"}), 400
+        else:
+            temperature_value = None
+
+        pour_activity_id = data.get('pourActivityId')
+        if pour_activity_id in ('', None):
+            pour_activity_id = None
+        else:
+            try:
+                pour_activity_id = int(pour_activity_id)
+            except (TypeError, ValueError):
+                return jsonify({"error": "pourActivityId must be numeric"}), 400
         
-        # Create batch
+        # Create batch (vehicleNumber may be omitted)
         batch = BatchRegister(
-            project_id=data['projectId'],
+            project_id=project_id,
             batch_number=batch_number,
-            pour_activity_id=data.get('pourActivityId'),
-            
-            # Vendor details
-            vendor_name=data['vendorName'],
-            
-            # Delivery details
-            vehicle_number=data['vehicleNumber'],
-            quantity_received=data['quantityReceived'],
+            pour_activity_id=pour_activity_id,
+            mix_design_id=mix_design.id,
+            rmc_vendor_id=vendor.id,
             delivery_date=delivery_datetime,
-            
-            # Concrete details
-            concrete_grade=data['grade'],
-            slump_value=data.get('slump'),
-            temperature=data.get('temperature'),
-            
-            # Location
-            location_description=data.get('location'),
-            
-            # Status
-            status='received',
-            received_by=current_user.id,
-            
-            # Remarks
+            delivery_time=delivery_time,
+            quantity_ordered=quantity_received,
+            quantity_received=quantity_received,
+            vehicle_number=data.get('vehicleNumber'),
+            slump_tested=slump_value,
+            temperature_celsius=temperature_value,
+            pour_location_description=data.get('location'),
+            verification_status='pending',
+            entered_by=current_user.id,
             remarks=data.get('remarks', 'Quick entry - vehicle register maintained by security')
         )
         
         db.session.add(batch)
         db.session.commit()
+
+        batch_dict = batch.to_dict()
+        batch_dict['vendorName'] = vendor.vendor_name
+        batch_dict['mixDesignGrade'] = grade
+        batch_dict['quantity'] = quantity_received
         
         return jsonify({
+            "success": True,
             "message": "Batch created successfully via quick entry",
-            "batch": batch.to_dict()
+            "batch": batch_dict
         }), 201
         
     except Exception as e:
@@ -121,7 +241,10 @@ def quick_entry_batch(current_user):
 
 @batch_import_bp.route('/bulk-import', methods=['POST'])
 @jwt_required()
-def bulk_import_batches(current_user):
+def bulk_import_batches():
+    current_user = _get_current_user()
+    if not current_user:
+        return jsonify({"error": "User not found"}), 404
     """
     Bulk import batches from Excel/CSV file.
     For sites where security maintains vehicle register.

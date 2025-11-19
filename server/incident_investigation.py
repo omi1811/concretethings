@@ -31,9 +31,10 @@ def safety_officer_required(f):
     @jwt_required()
     def decorated_function(*args, **kwargs):
         user_id = get_current_user_id()
-        user = User.query.get(user_id)
-        if not user or user.role not in ['admin', 'safety_officer']:
-            return jsonify({'error': 'Unauthorized. Safety Officer or Admin access required.'}), 403
+        with session_scope() as session:
+            user = session.query(User).get(user_id)
+            if not user or user.role not in ['admin', 'safety_officer']:
+                return jsonify({'error': 'Unauthorized. Safety Officer or Admin access required.'}), 403
         return f(*args, **kwargs)
     return decorated_function
 
@@ -41,12 +42,13 @@ def generate_incident_number(project_id):
     """Generate unique incident number: INC-{project_id}-{year}-{seq}"""
     year = datetime.now().year
     
-    # Count existing incidents for this project and year
-    existing = IncidentReport.query.filter(
-        IncidentReport.project_id == project_id,
-        extract('year', IncidentReport.incident_date) == year,
-        IncidentReport.is_deleted == False
-    ).count()
+    with session_scope() as session:
+        # Count existing incidents for this project and year
+        existing = session.query(IncidentReport).filter(
+            IncidentReport.project_id == project_id,
+            extract('year', IncidentReport.incident_date) == year,
+            IncidentReport.is_deleted == False
+        ).count()
     
     seq = existing + 1
     return f"INC-{project_id}-{year}-{seq:04d}"

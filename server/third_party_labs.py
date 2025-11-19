@@ -210,11 +210,11 @@ def get_lab(lab_id):
             # Add user names
             if lab.created_by:
                 creator = session.query(User).filter_by(id=lab.created_by).first()
-                lab_dict['created_by_name'] = creator.name if creator else None
+                lab_dict['created_by_name'] = creator.full_name if creator else None
             
             if lab.approved_by:
                 approver = session.query(User).filter_by(id=lab.approved_by).first()
-                lab_dict['approved_by_name'] = approver.name if approver else None
+                lab_dict['approved_by_name'] = approver.full_name if approver else None
             
             return jsonify({
                 "success": True,

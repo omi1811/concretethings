@@ -185,7 +185,7 @@ def get_batches():
             
             # Apply filters
             if vendor_id:
-                query = query.filter_by(vendor_id=vendor_id)
+                query = query.filter(BatchRegister.rmc_vendor_id == vendor_id)
             if mix_design_id:
                 query = query.filter_by(mix_design_id=mix_design_id)
             if status:
@@ -213,24 +213,36 @@ def get_batches():
             for batch in batches:
                 batch_dict = batch.to_dict()
                 
-                # Add vendor name
-                if batch.vendor_id:
-                    vendor = session.query(RMCVendor).filter_by(id=batch.vendor_id).first()
-                    batch_dict['vendor_name'] = vendor.vendor_name if vendor else None
+                # Add vendor name (legacy snake_case + camelCase compatibility)
+                if batch.rmc_vendor_id:
+                    vendor = session.query(RMCVendor).filter_by(id=batch.rmc_vendor_id).first()
+                    vendor_name = vendor.vendor_name if vendor else None
+                    batch_dict['vendor_name'] = vendor_name
+                    batch_dict['vendorName'] = vendor_name
                 
-                # Add mix design name
+                # Add mix design name (map to existing MixDesign fields)
                 if batch.mix_design_id:
                     mix = session.query(MixDesign).filter_by(id=batch.mix_design_id).first()
-                    batch_dict['mix_design_name'] = mix.name if mix else None
+                    if mix:
+                        # Prefer mix_design_id as the display identifier, fallback to project_name
+                        mix_display = mix.mix_design_id or mix.project_name
+                    else:
+                        mix_display = None
+                    batch_dict['mix_design_name'] = mix_display
+                    batch_dict['mixDesignName'] = mix_display
+
+                # Add compatibility fields expected by frontend
+                batch_dict['status'] = batch.verification_status
+                batch_dict['quantity'] = batch.quantity_received or batch.quantity_ordered
                 
                 result.append(batch_dict)
-            
+
             return jsonify({
                 "success": True,
                 "count": len(result),
                 "batches": result
             }), 200
-    
+
     except Exception as e:
         print(f"Error fetching batches: {str(e)}")
         traceback.print_exc()
@@ -269,34 +281,43 @@ def get_batch(batch_id):
             batch_dict = batch.to_dict()
             
             # Add vendor details
-            if batch.vendor_id:
-                vendor = session.query(RMCVendor).filter_by(id=batch.vendor_id).first()
+            if batch.rmc_vendor_id:
+                vendor = session.query(RMCVendor).filter_by(id=batch.rmc_vendor_id).first()
                 if vendor:
                     batch_dict['vendor'] = {
                         'id': vendor.id,
                         'name': vendor.vendor_name,
                         'plant_location': vendor.plant_location
                     }
+                    batch_dict['vendorName'] = vendor.vendor_name
             
-            # Add mix design details
+            # Add mix design details (use existing MixDesign fields)
             if batch.mix_design_id:
                 mix = session.query(MixDesign).filter_by(id=batch.mix_design_id).first()
                 if mix:
                     batch_dict['mix_design'] = {
                         'id': mix.id,
-                        'name': mix.name,
-                        'grade': mix.grade,
-                        'type': mix.type
+                        'mixDesignId': mix.mix_design_id,
+                        'projectName': mix.project_name,
+                        'grade': mix.concrete_grade,
+                        'isSelfCompacting': bool(mix.is_self_compacting),
+                        'isFreeFlow': bool(mix.is_free_flow)
                     }
+                    # Compatibility field expected by frontend
+                    batch_dict['mixDesignName'] = mix.mix_design_id or mix.project_name
+
+            # Provide status/quantity compatibility fields
+            batch_dict['status'] = batch.verification_status
+            batch_dict['quantity'] = batch.quantity_received or batch.quantity_ordered
             
             # Add created/verified by user names
             if batch.created_by:
                 creator = session.query(User).filter_by(id=batch.created_by).first()
-                batch_dict['created_by_name'] = creator.name if creator else None
+                batch_dict['created_by_name'] = creator.full_name if creator else None
             
             if batch.verified_by:
                 verifier = session.query(User).filter_by(id=batch.verified_by).first()
-                batch_dict['verified_by_name'] = verifier.name if verifier else None
+                batch_dict['verified_by_name'] = verifier.full_name if verifier else None
             
             return jsonify({
                 "success": True,
@@ -502,7 +523,11 @@ def create_batch():
             
             batch_dict = batch.to_dict()
             batch_dict['vendor_name'] = vendor.vendor_name
-            batch_dict['mix_design_name'] = mix.name
+            # mix should be defined earlier; map to existing fields
+            try:
+                batch_dict['mix_design_name'] = mix.mix_design_id or mix.project_name
+            except Exception:
+                batch_dict['mix_design_name'] = None
         
         return jsonify({
             "success": True,
@@ -769,7 +794,11 @@ def verify_batch(batch_id):
             
             batch_dict = batch.to_dict()
             batch_dict['vendor_name'] = vendor.vendor_name if vendor else None
-            batch_dict['mix_design_name'] = mix_design.name if mix_design else None
+            # Use existing MixDesign fields for display name
+            if mix_design:
+                batch_dict['mix_design_name'] = mix_design.mix_design_id or mix_design.project_name
+            else:
+                batch_dict['mix_design_name'] = None
         
         # Send email notification on rejection
         if status == 'rejected':
@@ -777,7 +806,7 @@ def verify_batch(batch_id):
                 notify_batch_rejection_email(
                     batch_id=batch_id,
                     batch_number=batch.batch_number,
-                    vendor_email=vendor.email if vendor and vendor.email else None,
+                    vendor_email=vendor.contact_email if vendor and getattr(vendor, 'contact_email', None) else None,
                     vendor_name=vendor.vendor_name if vendor else "Unknown Vendor",
                     project_name=project.name if project else "Unknown Project",
                     delivery_date=batch.delivery_date.strftime("%Y-%m-%d"),

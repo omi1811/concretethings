@@ -22,7 +22,6 @@ export function Providers({ children }) {
 
     // Register sync listener
     const handleOnline = () => {
-      console.log('App is online');
       syncManager.startSync();
     };
 

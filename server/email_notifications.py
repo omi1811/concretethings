@@ -25,7 +25,7 @@ SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", SMTP_USER)
 SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "ProSite")
-EMAIL_ENABLED = os.getenv("EMAIL_ENABLED", "false").lower() == "true"
+EMAIL_ENABLED = os.getenv("EMAIL_ENABLED", "True").lower() == "true"
 APP_URL = os.getenv("APP_URL", "http://localhost:8000")
 
 
@@ -33,13 +33,18 @@ class EmailService:
     """Email notification service using SMTP."""
     
     def __init__(self):
-        self.enabled = EMAIL_ENABLED
-        self.smtp_host = SMTP_HOST
-        self.smtp_port = SMTP_PORT
-        self.smtp_user = SMTP_USER
-        self.smtp_password = SMTP_PASSWORD
-        self.from_email = SMTP_FROM_EMAIL
-        self.from_name = SMTP_FROM_NAME
+        email_enabled_env = os.getenv("EMAIL_ENABLED")
+        self.enabled = (
+            EMAIL_ENABLED if email_enabled_env is None
+            else str(email_enabled_env).strip().lower() in {"true", "1", "yes", "on"}
+        )
+
+        self.smtp_host = os.getenv("SMTP_HOST", SMTP_HOST)
+        self.smtp_port = int(os.getenv("SMTP_PORT", str(SMTP_PORT)))
+        self.smtp_user = os.getenv("SMTP_USER", SMTP_USER)
+        self.smtp_password = os.getenv("SMTP_PASSWORD", SMTP_PASSWORD)
+        self.from_email = os.getenv("SMTP_FROM_EMAIL", self.smtp_user)
+        self.from_name = os.getenv("SMTP_FROM_NAME", SMTP_FROM_NAME)
         
         if self.enabled:
             if not self.smtp_user or not self.smtp_password:

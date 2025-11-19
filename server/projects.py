@@ -11,6 +11,7 @@ from contextlib import contextmanager
 
 projects_bp = Blueprint('projects', __name__, url_prefix='/api/projects')
 
+
 @contextmanager
 def session_scope():
     """Provide a transactional scope around a series of operations."""
@@ -24,6 +25,7 @@ def session_scope():
     finally:
         session.close()
 
+
 @projects_bp.route('/', methods=['GET'])
 @jwt_required()
 def list_projects():
@@ -32,22 +34,26 @@ def list_projects():
         with session_scope() as session:
             user_id = get_jwt_identity()
             user = session.query(User).filter_by(id=user_id).first()
-            
+
             if not user:
                 return jsonify({'error': 'User not found'}), 404
-            
+
             # Get all projects for user's company
-            projects = session.query(Project).filter_by(
-                company_id=user.company_id
-            ).order_by(desc(Project.created_at)).all()
-            
-            return jsonify({
-                'projects': [project.to_dict() for project in projects],
-                'total': len(projects)
-            }), 200
-            
+            projects = (
+                session.query(Project)
+                .filter_by(company_id=user.company_id)
+                .order_by(desc(Project.created_at))
+                .all()
+            )
+
+            # Return enabled modules/features for each project
+            return (
+                jsonify({'projects': [project.to_dict() for project in projects], 'total': len(projects)}),
+                200,
+            )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @projects_bp.route('/<int:project_id>', methods=['GET'])
 @jwt_required()
@@ -57,20 +63,21 @@ def get_project(project_id):
         with session_scope() as session:
             user_id = get_jwt_identity()
             user = session.query(User).filter_by(id=user_id).first()
-            
+
             if not user:
                 return jsonify({'error': 'User not found'}), 404
-            
-            project = session.query(Project).filter_by(
-                id=project_id,
-                company_id=user.company_id
-            ).first()
-            
+
+            project = (
+                session.query(Project)
+                .filter_by(id=project_id, company_id=user.company_id)
+                .first()
+            )
+
             if not project:
                 return jsonify({'error': 'Project not found'}), 404
-            
+
+            # Return enabled modules/features for this project
             return jsonify({'project': project.to_dict()}), 200
-            
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

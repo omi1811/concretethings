@@ -1,34 +1,52 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Menu, Bell, User, ChevronDown, LogOut } from 'lucide-react';
+import { Menu, Bell, User, ChevronDown, LogOut, Languages } from 'lucide-react';
 import { OfflineIndicator } from './OfflineIndicator';
 import { SyncStatus } from './SyncStatus';
 import { Button } from '../ui/Button';
-import { getUserData } from '@/lib/db';
-import { useRouter } from 'next/navigation';
+import { getUserData, clearUserData } from '@/lib/db';
+import { clearTokens } from '@/lib/api-optimized';
+import { useRouter, usePathname } from 'next/navigation';
 
 export function Header({ onMenuClick }) {
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const [currentLang, setCurrentLang] = useState('en');
   const router = useRouter();
+  const pathname = usePathname();
   
   useEffect(() => {
     loadUserData();
+    // Load saved language preference
+    const savedLang = localStorage.getItem('language') || 'en';
+    setCurrentLang(savedLang);
   }, []);
   
   async function loadUserData() {
     try {
-      const userData = await getUserData('current_user');
+      const userData = await getUserData();
       setUser(userData);
     } catch (error) {
       console.error('Error loading user data:', error);
     }
   }
   
-  function handleLogout() {
-    localStorage.removeItem('auth_token');
+  async function handleLogout() {
+    clearTokens();
+    await clearUserData();
     router.push('/login');
+  }
+  
+  function handleLanguageChange(lang) {
+    setCurrentLang(lang);
+    localStorage.setItem('language', lang);
+    setShowLangMenu(false);
+    
+    // Reload page to apply language change
+    // In production, you would use next-intl's locale switching
+    window.location.reload();
   }
   
   return (
@@ -53,6 +71,46 @@ export function Header({ onMenuClick }) {
         {/* Mobile status indicators */}
         <div className="lg:hidden flex items-center gap-2">
           <OfflineIndicator />
+        </div>
+        
+        {/* Language Switcher */}
+        <div className="relative">
+          <button
+            onClick={() => setShowLangMenu(!showLangMenu)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition text-gray-600 hover:text-gray-900"
+          >
+            <Languages className="w-5 h-5" />
+            <span className="hidden md:inline text-sm font-medium">
+              {currentLang === 'en' ? 'English' : 'हिन्दी'}
+            </span>
+          </button>
+          
+          {showLangMenu && (
+            <>
+              <div 
+                className="fixed inset-0 z-40"
+                onClick={() => setShowLangMenu(false)}
+              />
+              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                <button
+                  onClick={() => handleLanguageChange('en')}
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 ${
+                    currentLang === 'en' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                  }`}
+                >
+                  🇬🇧 English
+                </button>
+                <button
+                  onClick={() => handleLanguageChange('hi')}
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 ${
+                    currentLang === 'hi' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                  }`}
+                >
+                  🇮🇳 हिन्दी
+                </button>
+              </div>
+            </>
+          )}
         </div>
         
         {/* Notifications */}

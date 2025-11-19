@@ -15,12 +15,24 @@ from datetime import datetime
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from server.models import PourActivity, BatchRegister, Project, User, db
 
+
+def _get_current_user():
+    """Resolve the current authenticated user from the JWT."""
+    identity = get_jwt_identity()
+    if identity is None:
+        return None
+    try:
+        user_id = int(identity)
+    except (TypeError, ValueError):
+        return None
+    return db.session.query(User).filter_by(id=user_id).first()
+
 pour_activities_bp = Blueprint('pour_activities', __name__, url_prefix='/api/pour-activities')
 
 
 @pour_activities_bp.route('', methods=['POST'])
 @jwt_required()
-def create_pour_activity(current_user):
+def create_pour_activity():
     """
     Create a new pour activity
     
@@ -45,14 +57,23 @@ def create_pour_activity(current_user):
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         
         # Validate required fields
         if not data.get('projectId'):
             return jsonify({"error": "projectId is required"}), 400
         
+        current_user = _get_current_user()
+        if not current_user:
+            return jsonify({"error": "User not found"}), 404
+
+        try:
+            project_id = int(data['projectId'])
+        except (TypeError, ValueError):
+            return jsonify({"error": "projectId must be numeric"}), 400
+
         # Verify project exists and user has access
-        project = db.session.query(Project).filter_by(id=data['projectId']).first()
+        project = db.session.query(Project).filter_by(id=project_id).first()
         if not project:
             return jsonify({"error": "Project not found"}), 404
         
@@ -61,7 +82,7 @@ def create_pour_activity(current_user):
         if not pour_id:
             # Generate: POUR-YYYY-NNN
             last_pour = db.session.query(PourActivity)\
-                .filter_by(project_id=data['projectId'])\
+                .filter_by(project_id=project_id)\
                 .order_by(PourActivity.id.desc())\
                 .first()
             
@@ -80,7 +101,7 @@ def create_pour_activity(current_user):
         
         # Create pour activity
         pour = PourActivity(
-            project_id=data['projectId'],
+            project_id=project_id,
             pour_id=pour_id,
             pour_date=datetime.fromisoformat(data.get('pourDate', datetime.now().isoformat())),
             
@@ -120,7 +141,7 @@ def create_pour_activity(current_user):
 
 @pour_activities_bp.route('', methods=['GET'])
 @jwt_required()
-def list_pour_activities(current_user):
+def list_pour_activities():
     """
     List all pour activities for a project
     
@@ -130,7 +151,7 @@ def list_pour_activities(current_user):
     - concreteType: Filter by concrete type (Normal/PT)
     """
     try:
-        project_id = request.args.get('projectId')
+        project_id = request.args.get('projectId', type=int)
         if not project_id:
             return jsonify({"error": "projectId is required"}), 400
         
@@ -162,7 +183,7 @@ def list_pour_activities(current_user):
 
 @pour_activities_bp.route('/<int:pour_id>', methods=['GET'])
 @jwt_required()
-def get_pour_activity(current_user, pour_id):
+def get_pour_activity(pour_id):
     """
     Get pour activity details with linked batches
     """
@@ -193,7 +214,7 @@ def get_pour_activity(current_user, pour_id):
 
 @pour_activities_bp.route('/<int:pour_id>', methods=['PUT'])
 @jwt_required()
-def update_pour_activity(current_user, pour_id):
+def update_pour_activity(pour_id):
     """
     Update pour activity details
     
@@ -252,7 +273,7 @@ def update_pour_activity(current_user, pour_id):
 
 @pour_activities_bp.route('/<int:pour_id>/complete', methods=['POST'])
 @jwt_required()
-def complete_pour_activity(current_user, pour_id):
+def complete_pour_activity(pour_id):
     """
     Mark pour activity as completed
     This will trigger the cube casting modal on frontend
@@ -285,7 +306,8 @@ def complete_pour_activity(current_user, pour_id):
         data = request.get_json() or {}
         pour.status = 'completed'
         pour.completed_at = datetime.now()
-        pour.completed_by = current_user.id
+        current_user = _get_current_user()
+        pour.completed_by = current_user.id if current_user else None
         pour.total_quantity_received = total_received
         if data.get('remarks'):
             pour.remarks = data['remarks']
@@ -312,7 +334,7 @@ def complete_pour_activity(current_user, pour_id):
 
 @pour_activities_bp.route('/<int:pour_id>/batches', methods=['POST'])
 @jwt_required()
-def add_batch_to_pour(current_user, pour_id):
+def add_batch_to_pour(pour_id):
     """
     Link an existing batch to a pour activity
     
@@ -360,7 +382,7 @@ def add_batch_to_pour(current_user, pour_id):
 
 @pour_activities_bp.route('/<int:pour_id>', methods=['DELETE'])
 @jwt_required()
-def delete_pour_activity(current_user, pour_id):
+def delete_pour_activity(pour_id):
     """
     Cancel/soft delete a pour activity
     Only in_progress pours can be cancelled

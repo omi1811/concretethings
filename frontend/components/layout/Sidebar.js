@@ -13,7 +13,18 @@ import {
   FileCheck,
   FileText,
   Settings,
-  X
+  X,
+  Shield,
+  AlertTriangle,
+  ClipboardCheck,
+  HardHat,
+  MapPin,
+  FileWarning,
+  Clipboard,
+  UserCheck,
+  MessageSquareWarning,
+  XCircle,
+  Beaker
 } from 'lucide-react';
 
 const menuItems = [
@@ -23,39 +34,9 @@ const menuItems = [
     icon: LayoutDashboard
   },
   {
-    title: 'Batch Register',
-    href: '/dashboard/batches',
-    icon: Package
-  },
-  {
-    title: 'Cube Tests',
-    href: '/dashboard/cube-tests',
-    icon: FlaskConical
-  },
-  {
-    title: 'Training Register',
-    href: '/dashboard/training',
-    icon: GraduationCap
-  },
-  {
-    title: 'Material Tests',
-    href: '/dashboard/materials',
-    icon: TestTube2
-  },
-  {
-    title: 'Third-Party Labs',
-    href: '/dashboard/labs',
+    title: 'Projects',
+    href: '/dashboard/projects',
     icon: Building2
-  },
-  {
-    title: 'Handover Register',
-    href: '/dashboard/handovers',
-    icon: FileCheck
-  },
-  {
-    title: 'Reports',
-    href: '/dashboard/reports',
-    icon: FileText
   },
   {
     title: 'Settings',
@@ -102,7 +83,18 @@ export function Sidebar({ isOpen, onClose }) {
         
         {/* Navigation */}
         <nav className="px-3 py-4 space-y-1 overflow-y-auto h-[calc(100vh-73px)]">
-          {menuItems.map((item) => {
+          {menuItems.map((item, index) => {
+            // Section Headers
+            if (item.isSection) {
+              return (
+                <div key={index} className="pt-4 pb-2 px-3">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    {item.title}
+                  </h3>
+                </div>
+              );
+            }
+
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             

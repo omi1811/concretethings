@@ -6,6 +6,8 @@ import { api } from '@/lib/api';
 import { Building2, Users, DollarSign, TrendingUp, Plus, Search, Settings, Eye, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
+const SUPPORT_API_BASE = '/api/support';
+
 export default function SupportDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -24,12 +26,21 @@ export default function SupportDashboard() {
   const fetchData = async () => {
     try {
       const [overviewRes, companiesRes] = await Promise.all([
-        api.get('/support/dashboard'),
-        api.get('/support/companies')
+        api.get(`${SUPPORT_API_BASE}/dashboard`),
+        api.get(`${SUPPORT_API_BASE}/companies`)
       ]);
       
-      setOverview(overviewRes.data);
-      setCompanies(companiesRes.data);
+      const overviewData = overviewRes?.data?.data ?? overviewRes?.data ?? overviewRes;
+      const companiesData = Array.isArray(companiesRes?.data)
+        ? companiesRes.data
+        : Array.isArray(companiesRes?.data?.data)
+          ? companiesRes.data.data
+          : Array.isArray(companiesRes)
+            ? companiesRes
+            : [];
+
+      setOverview(overviewData);
+      setCompanies(companiesData);
     } catch (error) {
       console.error('Error fetching support data:', error);
       if (error.response?.status === 403) {
@@ -46,9 +57,21 @@ export default function SupportDashboard() {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       if (statusFilter) params.append('status', statusFilter);
-      
-      const res = await api.get(`/support/companies?${params.toString()}`);
-      setCompanies(res.data);
+
+      const queryString = params.toString();
+      const endpoint = queryString
+        ? `${SUPPORT_API_BASE}/companies?${queryString}`
+        : `${SUPPORT_API_BASE}/companies`;
+
+      const res = await api.get(endpoint);
+      const list = Array.isArray(res?.data)
+        ? res.data
+        : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : Array.isArray(res)
+            ? res
+            : [];
+      setCompanies(list);
     } catch (error) {
       console.error('Error searching companies:', error);
     }
@@ -375,7 +398,13 @@ function CreateCompanyModal({ onClose, onSuccess }) {
     setSaving(true);
 
     try {
-      await api.post('/support/companies', formData);
+      const payload = {
+        ...formData,
+        activeProjectsLimit: Math.max(1, Number(formData.activeProjectsLimit) || 0),
+        pricePerProject: Number(formData.pricePerProject) || 0,
+      };
+
+      await api.post(`${SUPPORT_API_BASE}/companies`, payload);
       alert('Company created successfully!');
       onSuccess();
     } catch (error) {
@@ -463,7 +492,13 @@ function CreateCompanyModal({ onClose, onSuccess }) {
                 min="1"
                 required
                 value={formData.activeProjectsLimit}
-                onChange={(e) => setFormData({ ...formData, activeProjectsLimit: parseInt(e.target.value) })}
+                onChange={(e) => {
+                  const { value } = e.target;
+                  setFormData((prev) => ({
+                    ...prev,
+                    activeProjectsLimit: value === '' ? '' : Number(value),
+                  }));
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -478,7 +513,13 @@ function CreateCompanyModal({ onClose, onSuccess }) {
                 step="500"
                 required
                 value={formData.pricePerProject}
-                onChange={(e) => setFormData({ ...formData, pricePerProject: parseFloat(e.target.value) })}
+                onChange={(e) => {
+                  const { value } = e.target;
+                  setFormData((prev) => ({
+                    ...prev,
+                    pricePerProject: value === '' ? '' : Number(value),
+                  }));
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -533,7 +574,13 @@ function EditCompanyModal({ company, onClose, onSuccess }) {
     setSaving(true);
 
     try {
-      await api.put(`/support/companies/${company.id}`, formData);
+      const payload = {
+        ...formData,
+        activeProjectsLimit: Math.max(1, Number(formData.activeProjectsLimit) || 0),
+        pricePerProject: Number(formData.pricePerProject) || 0,
+      };
+
+      await api.put(`${SUPPORT_API_BASE}/companies/${company.id}`, payload);
       alert('Company updated successfully!');
       onSuccess();
     } catch (error) {
@@ -622,7 +669,13 @@ function EditCompanyModal({ company, onClose, onSuccess }) {
                 min="1"
                 required
                 value={formData.activeProjectsLimit}
-                onChange={(e) => setFormData({ ...formData, activeProjectsLimit: parseInt(e.target.value) })}
+                onChange={(e) => {
+                  const { value } = e.target;
+                  setFormData((prev) => ({
+                    ...prev,
+                    activeProjectsLimit: value === '' ? '' : Number(value),
+                  }));
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -640,11 +693,17 @@ function EditCompanyModal({ company, onClose, onSuccess }) {
                 step="500"
                 required
                 value={formData.pricePerProject}
-                onChange={(e) => setFormData({ ...formData, pricePerProject: parseFloat(e.target.value) })}
+                onChange={(e) => {
+                  const { value } = e.target;
+                  setFormData((prev) => ({
+                    ...prev,
+                    pricePerProject: value === '' ? '' : Number(value),
+                  }));
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <p className="text-xs text-gray-500 mt-1">
-                New monthly: ₹{(company.activeProjects * formData.pricePerProject).toLocaleString()}
+                New monthly: ₹{(company.activeProjects * (Number(formData.pricePerProject) || 0)).toLocaleString()}
               </p>
             </div>
           </div>

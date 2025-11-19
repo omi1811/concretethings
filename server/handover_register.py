@@ -50,16 +50,16 @@ class HandoverRegister(Base):
     floor_level = Column(String(50), nullable=True)
     zone_area = Column(String(100), nullable=True)
     
-    # Contractor Information
+    # Contractor Information (no foreign keys - contractors are separate entities from RMC vendors)
     outgoing_contractor_name = Column(String(255), nullable=False)
-    outgoing_contractor_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
+    outgoing_contractor_company = Column(String(255), nullable=True)
     outgoing_supervisor_name = Column(String(255), nullable=False)
     outgoing_supervisor_phone = Column(String(20), nullable=True)
     outgoing_supervisor_signature = Column(Text, nullable=True)  # Base64 or URL
     outgoing_signed_date = Column(DateTime, nullable=True)
     
     incoming_contractor_name = Column(String(255), nullable=True)
-    incoming_contractor_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
+    incoming_contractor_company = Column(String(255), nullable=True)
     incoming_supervisor_name = Column(String(255), nullable=True)
     incoming_supervisor_phone = Column(String(20), nullable=True)
     incoming_supervisor_signature = Column(Text, nullable=True)

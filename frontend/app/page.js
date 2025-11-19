@@ -1,9 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { CheckCircle, X, Mail, Phone, MessageSquare } from 'lucide-react';
+import {
+  ArrowRight,
+  BarChart3,
+  Building2,
+  CheckCircle,
+  ClipboardCheck,
+  FileBarChart,
+  FileText,
+  HardHat,
+  LayoutDashboard,
+  Mail,
+  Settings2,
+  ShieldCheck,
+  Truck,
+  Users,
+  X,
+} from 'lucide-react';
 
 export default function Home() {
   const [showContactModal, setShowContactModal] = useState(false);
@@ -13,321 +29,293 @@ export default function Home() {
     phone: '',
     company: '',
     message: '',
-    projectCount: '1-5'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
 
-  const features = [
-    'Batch Tracking & Management',
-    'Cube Testing & ISO Compliance',
-    'Site Training Register',
-    'Material Testing & Approval',
-    'Third-Party Lab Integration',
-    'Offline-First Architecture',
-    'Real-time Sync & Updates',
-    'Multi-Project Management'
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      const userStr = localStorage.getItem('user');
+      
+      if (token && userStr) {
+        setIsLoggedIn(true);
+        try {
+          setUser(JSON.parse(userStr));
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+        }
+      }
+    }
+  }, []);
+
+  const primarySections = [
+    {
+      title: 'Dashboard',
+      description: 'Real-time KPIs, NCR alerts, and operational health across every project in a single view.',
+      icon: LayoutDashboard,
+      href: '/dashboard',
+      cta: 'Open dashboard',
+      iconClass: 'bg-blue-600 text-white',
+    },
+    {
+      title: 'Projects',
+      description: 'Curated portfolio of active and inactive programs maintained by the system admin team.',
+      icon: Building2,
+      href: '/dashboard/projects',
+      cta: 'View projects',
+      iconClass: 'bg-emerald-600 text-white',
+    },
+    {
+      title: 'Setup / Config',
+      description: 'Provision users, vendors, and contractors with guardrails that enforce company policy.',
+      icon: Settings2,
+      href: '/dashboard/settings',
+      cta: 'Manage access',
+      iconClass: 'bg-orange-500 text-white',
+    },
+    {
+      title: 'Reports',
+      description: 'Generate compliance packs, site scorecards, and executive-ready summaries on demand.',
+      icon: FileBarChart,
+      href: '/dashboard/reports',
+      cta: 'Explore reports',
+      iconClass: 'bg-indigo-600 text-white',
+    },
   ];
 
-  const handleContactSubmit = async (e) => {
-    e.preventDefault();
+  const projects = [];
+
+  const setupItems = [
+    {
+      name: 'User Directory',
+      description: 'Invite internal users, assign multi-project roles, and enforce fine-grained permissions.',
+      icon: Users,
+      highlights: ['Role-based access', 'Company hierarchy'],
+      href: '/dashboard/admin/users',
+      cta: 'Manage users',
+    },
+    {
+      name: 'Vendor Registry',
+      description: 'Onboard, audit, and monitor suppliers supporting your concrete and material workflows.',
+      icon: Truck,
+      highlights: ['Onboarding checklists', 'Performance tracking'],
+      href: '/dashboard/vendors',
+      cta: 'Review vendors',
+    },
+    {
+      name: 'Contractor Console',
+      description: 'Maintain contractor compliance, documentation, and site access in one place.',
+      icon: HardHat,
+      highlights: ['Compliance status', 'Document vault'],
+      href: '/dashboard/contractors',
+      cta: 'Open console',
+    },
+  ];
+
+  const reportStreams = [
+    {
+      name: 'Quality Intelligence',
+      description: 'Track cube strength variance, batch performance, and material approvals over time.',
+      icon: ClipboardCheck,
+      insights: ['Cube rejection trend', 'Batch analytics'],
+      href: '/dashboard/reports/quality',
+    },
+    {
+      name: 'Safety & NCR',
+      description: 'Monitor incident closures, NCR scoring, and permit-to-work adherence across sites.',
+      icon: ShieldCheck,
+      insights: ['Open NCR list', 'PTW compliance'],
+      href: '/dashboard/reports/safety',
+    },
+    {
+      name: 'Executive Summaries',
+      description: 'Generate export-ready PDF and spreadsheet snapshots for leadership and stakeholders.',
+      icon: FileText,
+      insights: ['KPI rollups', 'Weekly digests'],
+      href: '/dashboard/reports/executive',
+    },
+  ];
+
+  const activeProjects = projects.filter((project) => project.status === 'Active').length;
+  const inactiveProjects = projects.length - activeProjects;
+
+  // Navigation removed as per request
+
+  const handleContactSubmit = async (event) => {
+    event.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate API call (replace with actual endpoint later)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    console.log('Contact form submitted:', contactForm);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     setSubmitSuccess(true);
     setIsSubmitting(false);
-    
-    // Reset and close after 2 seconds
     setTimeout(() => {
       setShowContactModal(false);
       setSubmitSuccess(false);
-      setContactForm({
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        message: '',
-        projectCount: '1-5'
-      });
+      setContactForm({ name: '', email: '', phone: '', company: '', message: '' });
     }, 2000);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50">
-      {/* Hero section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-2xl mb-8">
-            <span className="text-white font-bold text-3xl">PS</span>
+    <div className="min-h-screen bg-slate-50">
+      <nav className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 font-semibold text-white shadow-sm">PS</div>
+            <span className="text-xl font-semibold text-slate-900">ProSite</span>
           </div>
-          
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-            ProSite
-          </h1>
-          
-          <p className="text-xl text-gray-600 mb-4 max-w-3xl mx-auto">
-            Professional Site Management Platform
-          </p>
-          
-          <p className="text-lg text-gray-500 mb-2">
-            Quality Management • Modular • Multi-Industry • Works Offline
-          </p>
-          
-          <p className="text-2xl font-bold text-blue-600 mb-8">
-            ₹5,000/month per project
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/login">
-              <Button size="lg" className="w-full sm:w-auto">
-                Sign In
-              </Button>
-            </Link>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="w-full sm:w-auto"
-              onClick={() => setShowContactModal(true)}
-            >
-              Contact Us
-            </Button>
+          <div className="flex items-center gap-3">
+            {isLoggedIn ? (
+              <>
+                <span className="text-sm font-medium text-slate-700">{user?.full_name || user?.email || 'User'}</span>
+                <Button variant="outline" size="sm" onClick={() => { localStorage.clear(); window.location.href = '/login'; }}>Logout</Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login"><Button variant="outline" size="sm">Sign In</Button></Link>
+                <Button size="sm" onClick={() => setShowContactModal(true)}>Contact Us</Button>
+              </>
+            )}
           </div>
         </div>
-        
-        {/* Features grid */}
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, index) => (
-            <div key={index} className="flex items-start gap-3 p-4 bg-white rounded-lg shadow-sm">
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <span className="text-gray-900 font-medium">{feature}</span>
-            </div>
-          ))}
-        </div>
-        
-        {/* Pricing */}
-        <div className="mt-20 bg-white rounded-2xl shadow-lg p-8 max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-8">Simple, Transparent Pricing</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="border-2 border-gray-200 rounded-xl p-6 text-center">
-              <h3 className="text-xl font-bold mb-2">Starter</h3>
-              <p className="text-3xl font-bold text-blue-600 mb-4">₹5,000<span className="text-sm text-gray-600">/mo</span></p>
-              <p className="text-gray-600 mb-4">1 Active Project</p>
-              <ul className="text-left space-y-2 text-sm">
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> All QMS features</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> Unlimited users</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> Offline mode</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> Email support</li>
-              </ul>
-            </div>
-            
-            <div className="border-2 border-blue-600 rounded-xl p-6 text-center bg-blue-50 relative">
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold">
-                POPULAR
+      </nav>
+
+      <main>
+        {!isLoggedIn ? (
+          <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-slate-50">
+            <div className="absolute inset-0 -z-10 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.7))]" />
+            <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:py-32">
+              <div className="text-center">
+                <p className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-medium text-blue-700">
+                  <BarChart3 className="h-4 w-4" />Professional Site Management
+                </p>
+                <h1 className="mt-8 text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
+                  Everything your site teams need
+                </h1>
+                <p className="mx-auto mt-6 max-w-2xl text-xl text-slate-600">
+                  Comprehensive quality management, safety compliance, and project oversight in one powerful platform.
+                </p>
+                <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                  <Link href="/login">
+                    <Button size="lg" className="px-8 text-base">
+                      Sign In
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </Link>
+                  <Button size="lg" variant="outline" className="px-8 text-base" onClick={() => setShowContactModal(true)}>
+                    Contact Us
+                  </Button>
+                </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">Professional</h3>
-              <p className="text-3xl font-bold text-blue-600 mb-4">₹15,000<span className="text-sm text-gray-600">/mo</span></p>
-              <p className="text-gray-600 mb-4">3-5 Active Projects</p>
-              <ul className="text-left space-y-2 text-sm">
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> Everything in Starter</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> Priority support</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> WhatsApp integration</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> Advanced analytics</li>
-              </ul>
             </div>
-            
-            <div className="border-2 border-gray-200 rounded-xl p-6 text-center">
-              <h3 className="text-xl font-bold mb-2">Enterprise</h3>
-              <p className="text-3xl font-bold text-blue-600 mb-4">Custom</p>
-              <p className="text-gray-600 mb-4">10+ Projects</p>
-              <ul className="text-left space-y-2 text-sm">
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> Everything in Pro</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> Dedicated support</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> Custom branding</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600" /> API access</li>
-              </ul>
+          </section>
+        ) : (
+          <section className="py-16 sm:py-20">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="text-center">
+                <h1 className="text-4xl font-bold text-slate-900 sm:text-5xl">Welcome back, {user?.full_name || 'User'}</h1>
+                <p className="mt-4 text-lg text-slate-600">Select a section to continue</p>
+              </div>
+              
+              <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {primarySections.map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <Link
+                      key={section.title}
+                      href={section.href}
+                      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition hover:border-blue-300 hover:shadow-xl"
+                    >
+                      <div className="relative z-10">
+                        <span className={`flex h-14 w-14 items-center justify-center rounded-xl ${section.iconClass} shadow-lg`}>
+                          <Icon className="h-7 w-7" />
+                        </span>
+                        <h3 className="mt-6 text-2xl font-semibold text-slate-900 group-hover:text-blue-700">
+                          {section.title}
+                        </h3>
+                        <p className="mt-3 text-sm text-slate-600">{section.description}</p>
+                        <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-blue-600">
+                          {section.cta}
+                          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 -z-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+      </main>
+
+      <footer className="border-t border-slate-200 bg-slate-100 py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-8 md:grid-cols-2">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 font-semibold text-white">PS</div>
+                <span className="text-lg font-semibold text-slate-900">ProSite</span>
+              </div>
+              <p className="mt-3 text-sm text-slate-600">Professional site management for concrete, safety, and compliance-led projects.</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Contact</h3>
+              <div className="mt-3 space-y-2 text-sm text-slate-600">
+                <a href="mailto:shrotrio@gmail.com" className="flex items-center gap-2 hover:text-slate-900"><Mail className="h-4 w-4" />shrotrio@gmail.com</a>
+                <button onClick={() => setShowContactModal(true)} className="flex items-center gap-2 text-left hover:text-slate-900">Schedule a call<ArrowRight className="h-4 w-4" /></button>
+              </div>
             </div>
           </div>
-        </div>
-        
-        {/* Stats */}
-        <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8">
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600">500+</div>
-            <div className="text-gray-600 mt-2">Companies</div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600">10,000+</div>
-            <div className="text-gray-600 mt-2">Projects</div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600">100%</div>
-            <div className="text-gray-600 mt-2">Offline Ready</div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600">24/7</div>
-            <div className="text-gray-600 mt-2">Support</div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Footer */}
-      <footer className="border-t border-gray-200 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
-          <p>© 2025 ProSite. All rights reserved.</p>
+          <div className="mt-10 border-t border-slate-200 pt-6 text-center text-sm text-slate-500"> 2025 ProSite. All rights reserved.</div>
         </div>
       </footer>
-      
-      {/* Contact Modal */}
+
       {showContactModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Contact Us</h2>
-              <button
-                onClick={() => setShowContactModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
+              <h2 className="text-2xl font-semibold text-slate-900">Contact us</h2>
+              <button onClick={() => setShowContactModal(false)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"><X className="h-5 w-5" /></button>
             </div>
-            
             {submitSuccess ? (
-              <div className="p-12 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-10 h-10 text-green-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h3>
-                <p className="text-gray-600">We'll get back to you within 24 hours.</p>
+              <div className="px-6 py-12 text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100"><CheckCircle className="h-10 w-10 text-emerald-600" /></div>
+                <h3 className="text-2xl font-semibold text-slate-900">Thank you!</h3>
+                <p className="mt-2 text-sm text-slate-600">We will get back to you within 24 hours.</p>
               </div>
             ) : (
-              <form onSubmit={handleContactSubmit} className="p-6 space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
+              <form onSubmit={handleContactSubmit} className="space-y-4 px-6 py-6">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={contactForm.name}
-                      onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="John Doe"
-                    />
+                    <label className="text-sm font-medium text-slate-600">Full name *</label>
+                    <input type="text" required value={contactForm.name} onChange={(event) => setContactForm({ ...contactForm, name: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" placeholder="John Doe" />
                   </div>
-                  
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={contactForm.email}
-                      onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="john@company.com"
-                    />
+                    <label className="text-sm font-medium text-slate-600">Email *</label>
+                    <input type="email" required value={contactForm.email} onChange={(event) => setContactForm({ ...contactForm, email: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" placeholder="john@company.com" />
                   </div>
                 </div>
-                
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={contactForm.phone}
-                      onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="+91 9876543210"
-                    />
+                    <label className="text-sm font-medium text-slate-600">Phone *</label>
+                    <input type="tel" required value={contactForm.phone} onChange={(event) => setContactForm({ ...contactForm, phone: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" placeholder="+91 9876543210" />
                   </div>
-                  
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Company Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={contactForm.company}
-                      onChange={(e) => setContactForm({ ...contactForm, company: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="ABC Construction"
-                    />
+                    <label className="text-sm font-medium text-slate-600">Company *</label>
+                    <input type="text" required value={contactForm.company} onChange={(event) => setContactForm({ ...contactForm, company: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" placeholder="ABC Construction" />
                   </div>
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Number of Projects
-                  </label>
-                  <select
-                    value={contactForm.projectCount}
-                    onChange={(e) => setContactForm({ ...contactForm, projectCount: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="1-5">1-5 projects</option>
-                    <option value="6-10">6-10 projects</option>
-                    <option value="11-20">11-20 projects</option>
-                    <option value="20+">20+ projects</option>
-                  </select>
+                  <label className="text-sm font-medium text-slate-600">Message</label>
+                  <textarea rows={4} value={contactForm.message} onChange={(event) => setContactForm({ ...contactForm, message: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" placeholder="Tell us about your rollout goals" />
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Message
-                  </label>
-                  <textarea
-                    value={contactForm.message}
-                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                    rows="4"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Tell us about your requirements..."
-                  />
-                </div>
-                
                 <div className="flex gap-3 pt-4">
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex-1"
-                  >
-                    {isSubmitting ? 'Sending...' : 'Send Message'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowContactModal(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
+                  <Button type="submit" disabled={isSubmitting} className="flex-1">{isSubmitting ? 'Sending...' : 'Send message'}</Button>
+                  <Button type="button" variant="outline" onClick={() => setShowContactModal(false)} className="flex-1">Cancel</Button>
                 </div>
-                
-                <div className="pt-4 border-t border-gray-200 mt-6">
-                  <p className="text-sm text-gray-600 text-center mb-3">Or reach us directly:</p>
-                  <div className="flex flex-col sm:flex-row justify-center gap-4 text-sm">
-                    <a href="mailto:support@prosite.com" className="flex items-center gap-2 text-blue-600 hover:text-blue-700">
-                      <Mail className="w-5 h-5" />
-                      support@prosite.com
-                    </a>
-                    <a href="tel:+919876543210" className="flex items-center gap-2 text-blue-600 hover:text-blue-700">
-                      <Phone className="w-4 h-4" />
-                      +91 98765 43210
-                    </a>
-                    <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:text-blue-700">
-                      <MessageSquare className="w-4 h-4" />
-                      WhatsApp
-                    </a>
-                  </div>
-                </div>
+                <div className="border-t border-slate-200 pt-4 text-center text-sm text-slate-500">Prefer email? <a href="mailto:shrotrio@gmail.com" className="font-medium text-blue-600 hover:text-blue-700">shrotrio@gmail.com</a></div>
               </form>
             )}
           </div>

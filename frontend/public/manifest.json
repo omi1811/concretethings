@@ -28,22 +28,19 @@
       "name": "New Batch Entry",
       "short_name": "New Batch",
       "description": "Create a new batch register entry",
-      "url": "/dashboard/batches/new",
-      "icons": [{ "src": "/icon-batch-96.png", "sizes": "96x96" }]
+      "url": "/dashboard/batches/new"
     },
     {
       "name": "New Cube Test",
       "short_name": "Cube Test",
       "description": "Record a new cube test",
-      "url": "/dashboard/cube-tests/new",
-      "icons": [{ "src": "/icon-cube-96.png", "sizes": "96x96" }]
+      "url": "/dashboard/cube-tests/new"
     },
     {
       "name": "Training Register",
       "short_name": "Training",
       "description": "Add training record",
-      "url": "/dashboard/training/new",
-      "icons": [{ "src": "/icon-training-96.png", "sizes": "96x96" }]
+      "url": "/dashboard/training/new"
     }
   ]
 }

@@ -239,8 +239,13 @@ def get_cube_tests():
                     # Add mix design info
                     if batch and batch.mix_design_id:
                         mix = session.query(MixDesign).filter_by(id=batch.mix_design_id).first()
-                        test_dict['mix_design_name'] = mix.name if mix else None
-                        test_dict['mix_design_grade'] = mix.grade if mix else None
+                        # Map to existing MixDesign fields
+                        if mix:
+                            test_dict['mix_design_name'] = mix.mix_design_id or mix.project_name
+                            test_dict['mix_design_grade'] = mix.concrete_grade
+                        else:
+                            test_dict['mix_design_name'] = None
+                            test_dict['mix_design_grade'] = None
                 
                 result.append(test_dict)
             
@@ -293,19 +298,21 @@ def get_cube_test(test_id):
                         if mix:
                             test_dict['mix_design'] = {
                                 'id': mix.id,
-                                'name': mix.name,
-                                'grade': mix.grade,
-                                'type': mix.type
+                                'mixDesignId': mix.mix_design_id,
+                                'projectName': mix.project_name,
+                                'grade': mix.concrete_grade,
+                                'isSelfCompacting': bool(mix.is_self_compacting),
+                                'isFreeFlow': bool(mix.is_free_flow)
                             }
             
             # Add user names
             if test.created_by:
                 creator = session.query(User).filter_by(id=test.created_by).first()
-                test_dict['created_by_name'] = creator.name if creator else None
+                test_dict['created_by_name'] = creator.full_name if creator else None
             
             if test.verified_by:
                 verifier = session.query(User).filter_by(id=test.verified_by).first()
-                test_dict['verified_by_name'] = verifier.name if verifier else None
+                test_dict['verified_by_name'] = verifier.full_name if verifier else None
             
             return jsonify({
                 "success": True,
@@ -501,7 +508,8 @@ def update_cube_test(test_id):
             
             test_dict = test.to_dict()
             test_dict['batch_number'] = batch.batch_number if batch else None
-            test_dict['mix_design_name'] = mix_design.name if mix_design else None
+            # Use existing MixDesign fields
+            test_dict['mix_design_name'] = (mix_design.mix_design_id or mix_design.project_name) if mix_design else None
         
         # Send notifications on failure (Email + WhatsApp)
         if test.pass_fail_status == 'fail' and old_status != 'fail':
@@ -510,7 +518,7 @@ def update_cube_test(test_id):
                 notification_data = {
                     'test_id': test_id,
                     'batch_number': batch.batch_number if batch else "Unknown",
-                    'mix_design_grade': mix_design.grade if mix_design else "Unknown",
+                    'mix_design_grade': mix_design.concrete_grade if mix_design else "Unknown",
                     'test_age_days': test.test_age_days,
                     'expected_strength': test.expected_strength_mpa,
                     'average_strength': test.average_strength_mpa,
@@ -520,7 +528,7 @@ def update_cube_test(test_id):
                     'ncr_number': test.ncr_number,
                     'project_name': project.name if project else "Unknown Project",
                     'vendor_name': vendor.vendor_name if vendor else "Unknown Vendor",
-                    'vendor_email': vendor.email if vendor and vendor.email else None,
+                    'vendor_email': vendor.contact_email if vendor and getattr(vendor, 'contact_email', None) else None,
                     'casting_date': test.casting_date.strftime("%Y-%m-%d") if test.casting_date else None,
                     'testing_date': test.testing_date.strftime("%Y-%m-%d") if test.testing_date else None
                 }

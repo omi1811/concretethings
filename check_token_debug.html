@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Debug</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #2a2a2a;
+            border: 1px solid #0f0;
+            border-radius: 5px;
+        }
+        .key {
+            color: #ff0;
+            font-weight: bold;
+        }
+        .value {
+            color: #0ff;
+            word-break: break-all;
+        }
+        .missing {
+            color: #f00;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0c0;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid;
+        }
+        .success {
+            border-color: #0f0;
+            background: #0f03;
+        }
+        .error {
+            border-color: #f00;
+            background: #f003;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Token Debug Tool</h1>
+    
+    <div class="section">
+        <h2>📦 LocalStorage Contents</h2>
+        <div id="storage-contents"></div>
+    </div>
+
+    <div class="section">
+        <h2>🧪 API Test</h2>
+        <button onclick="testProjectsAPI()">Test /api/projects</button>
+        <button onclick="testAuthMe()">Test /api/auth/me</button>
+        <button onclick="clearAll()">Clear All Tokens</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        function displayStorage() {
+            const container = document.getElementById('storage-contents');
+            const keys = ['token', 'access_token', 'auth_token', 'refresh_token', 'user'];
+            let html = '';
+
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    const display = key === 'user' ? JSON.stringify(JSON.parse(value), null, 2) : value;
+                    html += `
+                        <div style="margin: 10px 0;">
+                            <span class="key">${key}:</span><br>
+                            <span class="value">${display}</span>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div style="margin: 10px 0;">
+                            <span class="key">${key}:</span>
+                            <span class="missing"> NOT FOUND</span>
+                        </div>
+                    `;
+                }
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function testProjectsAPI() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<p>Testing /api/projects...</p>';
+
+            const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+            
+            if (!token) {
+                resultsDiv.innerHTML += '<div class="test-result error">❌ No token found in localStorage!</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/projects/`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultsDiv.innerHTML += `
+                        <div class="test-result success">
+                            ✅ SUCCESS ${response.status}<br>
+                            Projects: ${data.total || 0}<br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML += `
+                        <div class="test-result error">
+                            ❌ FAILED ${response.status}<br>
+                            Error: ${data.error || data.msg || 'Unknown error'}<br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                resultsDiv.innerHTML += `
+                    <div class="test-result error">
+                        ❌ NETWORK ERROR<br>
+                        ${err.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testAuthMe() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<p>Testing /api/auth/me...</p>';
+
+            const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+            
+            if (!token) {
+                resultsDiv.innerHTML += '<div class="test-result error">❌ No token found in localStorage!</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultsDiv.innerHTML += `
+                        <div class="test-result success">
+                            ✅ SUCCESS ${response.status}<br>
+                            User: ${data.email}<br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML += `
+                        <div class="test-result error">
+                            ❌ FAILED ${response.status}<br>
+                            Error: ${data.error || data.msg || 'Unknown error'}<br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                resultsDiv.innerHTML += `
+                    <div class="test-result error">
+                        ❌ NETWORK ERROR<br>
+                        ${err.message}
+                    </div>
+                `;
+            }
+        }
+
+        function clearAll() {
+            if (confirm('Clear all tokens and user data?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // Display on load
+        displayStorage();
+        setInterval(displayStorage, 1000);
+    </script>
+</body>
+</html>

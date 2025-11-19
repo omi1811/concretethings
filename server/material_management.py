@@ -393,7 +393,7 @@ def get_approved_brand(brand_id):
             # Add user names
             if brand.approved_by:
                 approver = session.query(User).filter_by(id=brand.approved_by).first()
-                brand_dict['approved_by_name'] = approver.name if approver else None
+                brand_dict['approved_by_name'] = approver.full_name if approver else None
             
             return jsonify({
                 "success": True,

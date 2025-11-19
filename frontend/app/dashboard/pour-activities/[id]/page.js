@@ -26,8 +26,9 @@ export default function PourActivityDetailPage({ params }) {
     setLoading(true);
     try {
       const result = await pourActivityAPI.getById(params.id);
-      if (result.success) {
-        setPour(result.data.pourActivity);
+      const pourData = result?.data?.pourActivity || result?.pourActivity;
+      if (pourData) {
+        setPour(pourData);
       }
     } catch (error) {
       console.error('Error loading pour activity:', error);
@@ -52,13 +53,18 @@ export default function PourActivityDetailPage({ params }) {
         remarks: 'Pour completed successfully'
       });
 
-      if (result.success) {
-        // Update local state
-        setPour(result.data.pourActivity);
-        // Show cube casting modal
+      const pourData = result?.data?.pourActivity || result?.pourActivity;
+      if (pourData) {
+        setPour(pourData);
+      }
+
+      const showModal = result?.showCubeModal ?? result?.data?.showCubeModal ?? false;
+      if (showModal) {
         setShowCubeModal(true);
-      } else {
-        alert('Error completing pour: ' + (result.error || 'Unknown error'));
+      }
+
+      if (!pourData && !showModal) {
+        alert('Error completing pour: ' + (result?.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error completing pour:', error);

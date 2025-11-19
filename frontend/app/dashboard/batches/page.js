@@ -24,8 +24,9 @@ export default function BatchesPage() {
     try {
       // Try to get from API (will use offline cache if available)
       const result = await batchAPI.getAll(1); // Default project ID
-      if (result.success) {
-        setBatches(result.data.batches || []);
+      if (result?.success) {
+        const batchesFromResult = result.data?.batches || result.batches || [];
+        setBatches(Array.isArray(batchesFromResult) ? batchesFromResult : []);
       }
     } catch (error) {
       console.error('Error loading batches:', error);

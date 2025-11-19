@@ -34,9 +34,8 @@ export default function PourActivitiesPage() {
       }
 
       const result = await pourActivityAPI.getAll(params);
-      if (result.success) {
-        setPourActivities(result.data.pourActivities || []);
-      }
+      const activities = result?.data?.pourActivities || result?.pourActivities || [];
+      setPourActivities(Array.isArray(activities) ? activities : []);
     } catch (error) {
       console.error('Error loading pour activities:', error);
     } finally {

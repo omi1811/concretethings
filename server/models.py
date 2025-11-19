@@ -6,10 +6,13 @@ from typing import Optional
 from sqlalchemy import DateTime, Float, Integer, String, Text, LargeBinary, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-try:
-    from .db import Base, SessionLocal
-except ImportError:
-    from db import Base, SessionLocal
+# Models must not import the full db/session machinery at module import time
+# to avoid circular imports when `server.db.init_db()` imports this module.
+# Import only the SQLAlchemy Declarative Base here.
+from server.db import Base
+# NOTE: do NOT import SessionLocal or other runtime db/session objects here.
+# If you need a session in a helper function, import SessionLocal lazily inside that function.
+
 
 
 # Database session wrapper for backward compatibility with Flask-SQLAlchemy style code
@@ -218,6 +221,41 @@ class Project(Base):
     company = relationship("Company", backref="projects")
 
     def to_dict(self) -> dict:
+        # Get enabled modules/features from company subscription and project settings
+        modules = []
+        features = []
+        if self.company and hasattr(self.company, 'subscribed_modules'):
+            import json as json_module
+            try:
+                modules = json_module.loads(self.company.subscribed_modules) if self.company.subscribed_modules else []
+            except Exception:
+                modules = []
+        # Example mapping: modules to features
+        module_features = {
+            "concrete": [
+                "Batch Register",
+                "Cube Testing",
+                "Material Tests",
+                "Mix Designs",
+                "Third-Party Labs",
+                "Concrete NC",
+                # Training and Handover are part of concrete app features now
+                "Training",
+                "Handover Report"
+            ],
+            "safety": [
+                "Incident Reports",
+                "Safety Audits",
+                "PPE Tracking",
+                "Permit to Work",
+                "Toolbox Talks",
+                "Safety NC"
+            ],
+            # 'other' retained for backward compatibility but intentionally empty
+            "other": []
+        }
+        for m in modules:
+            features.extend(module_features.get(m, []))
         return {
             "id": self.id,
             "companyId": self.company_id,
@@ -233,7 +271,9 @@ class Project(Base):
             "isActive": bool(self.is_active),
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),
-            "createdBy": self.created_by
+            "createdBy": self.created_by,
+            "enabledModules": modules,
+            "enabledFeatures": features
         }
 
 
@@ -506,7 +546,7 @@ class PourActivity(Base):
             "id": self.id,
             "projectId": self.project_id,
             "pourId": self.pour_id,
-            "pourDate": self.pour_date.isoformat(),
+            "pourDate": self.pour_date.isoformat() if self.pour_date else None,
             "location": {
                 "buildingName": self.building_name,
                 "floorLevel": self.floor_level,
