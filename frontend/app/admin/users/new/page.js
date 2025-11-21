@@ -14,6 +14,39 @@ export default function NewUserPage() {
   });
   const [loading, setLoading] = React.useState(false);
   const [message, setMessage] = React.useState(null);
+  const [checkingAuth, setCheckingAuth] = React.useState(true);
+  const [isAuthorized, setIsAuthorized] = React.useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    async function check() {
+      try {
+        const token = window.localStorage.getItem('access_token');
+        if (!token) {
+          if (mounted) setIsAuthorized(false);
+          return;
+        }
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          if (mounted) setIsAuthorized(false);
+          return;
+        }
+        const data = await res.json();
+        // backend returns camelCase isSystemAdmin
+        const allowed = !!(data && (data.isSystemAdmin || data.is_system_admin));
+        if (mounted) setIsAuthorized(allowed);
+      } catch (err) {
+        console.error('Auth check failed', err);
+        if (mounted) setIsAuthorized(false);
+      } finally {
+        if (mounted) setCheckingAuth(false);
+      }
+    }
+    check();
+    return () => { mounted = false; };
+  }, []);
 
   function onChange(e) {
     const { name, value, type, checked } = e.target;
@@ -53,6 +86,14 @@ export default function NewUserPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkingAuth) {
+    return <div className="p-6">Checking permissions...</div>;
+  }
+
+  if (!isAuthorized) {
+    return <div className="p-6 text-red-600">Access denied. System admin privileges required.</div>;
   }
 
   return (
