@@ -1,19 +1,14 @@
 """
-Concrete Quality Non-Conformance (NC) Models
+Quality Non-Conformance (NC) Models
 
-Complete workflow for raising, tracking, and resolving quality issues
-in concrete construction projects.
+Generalized workflow for raising, tracking, and resolving quality issues
+across project modules (not limited to concrete).
 
-Features:
-- Multi-level hierarchical tags (configured by System Admin)
-- Photo evidence with gallery/camera support
-- Location tracking
-- Severity-based scoring system
-- Contractor assignment and response
-- Email/WhatsApp/In-app notifications
-- Issue transfer capability
-- Monthly/weekly scoring reports
-- Complete audit trail
+Key additions made:
+- Hierarchical tags (L0-L3) managed by System Admin only
+- Photo evidence for issues and resolution
+- Structured response records (NCResponse) for professional responses
+- Severity tags retained (HIGH/MODERATE/LOW)
 
 Compliance: ISO 9001:2015 Clause 8.7 (Control of nonconforming outputs)
 """
@@ -44,7 +39,7 @@ class NCIssueStatus(enum.Enum):
     TRANSFERRED = "transferred"  # Issue transferred to different contractor
 
 
-class ConcreteNCTag(Base):
+class QualityNCTag(Base):
     """
     Hierarchical tags for categorizing NC issues.
     Configured by System Admin with support team assistance.
@@ -55,15 +50,15 @@ class ConcreteNCTag(Base):
         Level 3: Reinforcement
           Level 4: Cover inadequate
     """
-    __tablename__ = 'concrete_nc_tags'
+    __tablename__ = 'quality_nc_tags'
     
     id = Column(Integer, primary_key=True)
     company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
     
     # Tag details
     tag_name = Column(String(100), nullable=False)
-    tag_level = Column(Integer, nullable=False)  # 1, 2, 3, 4 (hierarchical depth)
-    parent_tag_id = Column(Integer, ForeignKey('concrete_nc_tags.id'), nullable=True)  # Parent in hierarchy
+    tag_level = Column(Integer, nullable=False)  # 0,1,2,3 (hierarchical depth L0-L3)
+    parent_tag_id = Column(Integer, ForeignKey('quality_nc_tags.id'), nullable=True)  # Parent in hierarchy
     tag_color = Column(String(20), default='#6366f1')  # Hex color for UI
     display_order = Column(Integer, default=0)
     
@@ -75,7 +70,7 @@ class ConcreteNCTag(Base):
     created_by = Column(Integer, ForeignKey('users.id'), nullable=False)
     
     # Relationships
-    parent_tag = relationship('ConcreteNCTag', remote_side=[id], backref='child_tags')
+    parent_tag = relationship('QualityNCTag', remote_side=[id], backref='child_tags')
     
     def to_dict(self):
         return {
@@ -89,7 +84,7 @@ class ConcreteNCTag(Base):
         }
 
 
-class ConcreteNCIssue(Base):
+class QualityNCIssue(Base):
     """
     Non-Conformance Issue for Concrete Quality Management.
     
@@ -101,7 +96,7 @@ class ConcreteNCIssue(Base):
     5. Sr. Engineer kept in loop throughout
     6. Issues can be transferred between contractors
     """
-    __tablename__ = 'concrete_nc_issues'
+    __tablename__ = 'quality_nc_issues'
     
     # Primary key
     id = Column(Integer, primary_key=True)
@@ -229,6 +224,38 @@ class ConcreteNCIssue(Base):
             'isScored': self.is_scored,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class NCResponse(Base):
+    """Structured responses/comments for NC issues.
+
+    Allows storing professional response entries (action plans, updates)
+    with optional attachments. These form an auditable response timeline.
+    """
+    __tablename__ = 'quality_nc_responses'
+
+    id = Column(Integer, primary_key=True)
+    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
+    project_id = Column(Integer, ForeignKey('projects.id'), nullable=False)
+    nc_issue_id = Column(Integer, ForeignKey('quality_nc_issues.id'), nullable=False)
+
+    responder_user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    response_text = Column(Text, nullable=False)
+    response_type = Column(String(50), nullable=False, default='update')  # update, action_plan, comment
+    attachments = Column(JSON, default=[])  # file paths
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'ncIssueId': self.nc_issue_id,
+            'responderUserId': self.responder_user_id,
+            'responseText': self.response_text,
+            'responseType': self.response_type,
+            'attachments': self.attachments,
+            'createdAt': self.created_at.isoformat() if self.created_at else None
         }
 
 

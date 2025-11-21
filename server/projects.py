@@ -89,8 +89,9 @@ def create_project():
         with session_scope() as session:
             user_id = get_jwt_identity()
             user = session.query(User).filter_by(id=user_id).first()
-            
-            if not user or user.role not in ['System Admin', 'Admin']:
+
+            # Allow system admins, company admins or support admins
+            if not user or not (getattr(user, 'is_system_admin', False) or getattr(user, 'is_company_admin', False) or getattr(user, 'is_support_admin', False)):
                 return jsonify({'error': 'Unauthorized'}), 403
             
             data = request.json

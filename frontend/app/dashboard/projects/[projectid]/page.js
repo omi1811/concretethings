@@ -38,7 +38,7 @@ export default function ProjectModulesPage() {
       icon: Shield,
       href: 'safetyapp'
     },
-    // 'Other Tools' removed — training/handover moved into ConcreteThings
+    // 'Other Tools' remains available under Projects → Other Tools
   };
 
   React.useEffect(() => {
@@ -113,25 +113,22 @@ export default function ProjectModulesPage() {
                       {project.enabledFeatures && project.enabledFeatures.length > 0 && (
                         <div className="mb-4">
                           <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Features</p>
-                          <div className="flex flex-wrap gap-2">
-                            {project.enabledFeatures.filter((feat) => {
-                              if (meta.name === 'ConcreteThings') {
-                                return [
-                                  'Batch Register', 'Cube Testing', 'Material Tests', 'Mix Designs', 'Third-Party Labs', 'Concrete NC', 'Training', 'Handover Report'
-                                ].includes(feat);
-                              }
-                              if (meta.name === 'SafetyApp') {
-                                return [
-                                  'Incident Reports', 'Safety Audits', 'PPE Tracking', 'Permit to Work', 'Toolbox Talks', 'Safety NC'
-                                ].includes(feat);
-                              }
-                              return false;
-                            }).map((feature) => (
-                              <span key={feature} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                {feature}
-                              </span>
-                            ))}
-                          </div>
+                              <div className="flex flex-wrap gap-2">
+                                {(() => {
+                                  // Prefer canonical module features when defined; otherwise fallback to project-provided features
+                                  const canonical = meta.features && meta.features.length ? meta.features : [];
+                                  const source = (canonical.length ? canonical : (project.enabledFeatures || []));
+                                  // If project provides enabledFeatures, intersect with canonical to avoid showing unavailable items
+                                  const finalList = (project.enabledFeatures && project.enabledFeatures.length && canonical.length)
+                                    ? source.filter((f) => project.enabledFeatures.includes(f))
+                                    : source;
+                                  return finalList.map((feature) => (
+                                    <span key={feature} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                      {feature}
+                                    </span>
+                                  ));
+                                })()}
+                              </div>
                         </div>
                       )}
                     </CardContent>

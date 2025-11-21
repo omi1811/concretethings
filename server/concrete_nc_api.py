@@ -13,8 +13,9 @@ import json
 
 from .models import User, Company, Project, RMCVendor
 from .concrete_nc_models import (
-    ConcreteNCTag, ConcreteNCIssue, ConcreteNCNotification, 
-    ConcreteNCScoreReport, NCIssueSeverity, NCIssueStatus
+    QualityNCTag, QualityNCIssue, NCResponse,
+    ConcreteNCNotification, ConcreteNCScoreReport,
+    NCIssueSeverity, NCIssueStatus
 )
 from .db import SessionLocal
 from .notifications import send_whatsapp_alert
@@ -51,7 +52,7 @@ def send_nc_notification(nc_issue, event_type, recipient_user_id, session):
     Send multi-channel notification for NC events.
     
     Args:
-        nc_issue: ConcreteNCIssue instance
+        nc_issue: QualityNCIssue instance
         event_type: Type of event (raised, acknowledged, responded, resolved, verified, closed, transferred, rejected)
         recipient_user_id: User ID to send notification to
         session: Database session
@@ -94,15 +95,22 @@ def send_nc_notification(nc_issue, event_type, recipient_user_id, session):
                 pass
         
         # Log notification
-        notification = ConcreteNCNotification(
-            issue_id=nc_issue.id,
-            recipient_user_id=recipient_user_id,
-            notification_type=event_type,
-            channel='whatsapp' if whatsapp_sent else ('email' if email_sent else 'in_app'),
-            sent_at=datetime.utcnow(),
-            delivered=whatsapp_sent or email_sent
-        )
-        session.add(notification)
+        try:
+            notification = ConcreteNCNotification(
+                company_id=nc_issue.company_id if hasattr(nc_issue, 'company_id') else None,
+                project_id=nc_issue.project_id if hasattr(nc_issue, 'project_id') else None,
+                nc_issue_id=nc_issue.id,
+                notification_type=event_type,
+                notification_channel='whatsapp' if whatsapp_sent else ('email' if email_sent else 'in_app'),
+                recipient_user_id=recipient_user_id,
+                message=message,
+                delivery_status='delivered' if (whatsapp_sent or email_sent) else 'sent',
+                delivery_timestamp=datetime.utcnow()
+            )
+            session.add(notification)
+        except Exception:
+            # best-effort logging; don't break main flow
+            pass
         
     except Exception as e:
         print(f"Notification error: {str(e)}")
@@ -121,10 +129,10 @@ def get_tags():
                 return jsonify({'error': 'User not found'}), 404
             
             # Get all tags for the company
-            tags = session.query(ConcreteNCTag).filter_by(
+            tags = session.query(QualityNCTag).filter_by(
                 company_id=user.company_id,
                 is_active=True
-            ).order_by(ConcreteNCTag.level, ConcreteNCTag.display_order).all()
+            ).order_by(QualityNCTag.tag_level, QualityNCTag.display_order).all()
             
             return jsonify({'tags': [tag.to_dict() for tag in tags]}), 200
             
@@ -141,37 +149,37 @@ def create_tag():
             user_id = get_jwt_identity()
             user = session.query(User).filter_by(id=user_id).first()
             
-            if not user or user.role not in ['System Admin', 'Admin']:
-                return jsonify({'error': 'Unauthorized'}), 403
+            if not user or not getattr(user, 'is_system_admin', False):
+                return jsonify({'error': 'Unauthorized: System Admin only'}), 403
             
             data = request.json
             
             # Validate required fields
-            if not data.get('name') or not data.get('level'):
+            if not data.get('name') or data.get('level') is None:
                 return jsonify({'error': 'Name and level are required'}), 400
-            
-            # Validate level
+
+            # Validate level (L0-L3)
             level = int(data['level'])
-            if level < 1 or level > 4:
-                return jsonify({'error': 'Level must be between 1 and 4'}), 400
-            
+            if level < 0 or level > 3:
+                return jsonify({'error': 'Level must be between 0 and 3 (L0-L3)'}), 400
+
             # If parent_tag_id provided, validate it exists and is correct level
             parent_tag_id = data.get('parent_tag_id')
             if parent_tag_id:
-                parent = session.query(ConcreteNCTag).filter_by(id=parent_tag_id).first()
+                parent = session.query(QualityNCTag).filter_by(id=parent_tag_id).first()
                 if not parent:
                     return jsonify({'error': 'Parent tag not found'}), 404
-                if parent.level != level - 1:
+                if parent.tag_level != level - 1:
                     return jsonify({'error': 'Parent tag must be one level above'}), 400
-            
-            tag = ConcreteNCTag(
+
+            tag = QualityNCTag(
                 company_id=user.company_id,
-                name=data['name'],
-                level=level,
+                tag_name=data['name'],
+                tag_level=level,
                 parent_tag_id=parent_tag_id,
-                color_code=data.get('color_code', '#666666'),
-                description=data.get('description'),
-                display_order=data.get('display_order', 0)
+                tag_color=data.get('color_code', '#666666'),
+                display_order=data.get('display_order', 0),
+                created_by=user_id
             )
             
             session.add(tag)
@@ -229,9 +237,9 @@ def raise_nc():
             
             # Generate NC number: NC-PROJ-YYYY-NNNN
             year = datetime.utcnow().year
-            count = session.query(func.count(ConcreteNCIssue.id)).filter(
-                ConcreteNCIssue.project_id == data['project_id'],
-                func.strftime('%Y', ConcreteNCIssue.created_at) == str(year)
+            count = session.query(func.count(QualityNCIssue.id)).filter(
+                QualityNCIssue.project_id == data['project_id'],
+                func.strftime('%Y', QualityNCIssue.created_at) == str(year)
             ).scalar()
             nc_number = f"NC-{project.project_id}-{year}-{str(count + 1).zfill(4)}"
             
@@ -253,27 +261,27 @@ def raise_nc():
             severity_score = severity_scores.get(severity, 0.25)
             
             # Create NC issue
-            nc_issue = ConcreteNCIssue(
+            nc_issue = QualityNCIssue(
                 company_id=user.company_id,
                 project_id=data['project_id'],
                 nc_number=nc_number,
-                title=data['title'],
-                description=data.get('description'),
+                issue_title=data['title'],
+                issue_description=data.get('description') or '',
                 photo_urls=photo_urls,
-                location_text=data.get('location_text'),
-                location_latitude=float(data['location_latitude']) if data.get('location_latitude') else None,
-                location_longitude=float(data['location_longitude']) if data.get('location_longitude') else None,
-                tag_ids=tag_ids,
-                severity=severity,
+                location=data.get('location_text') or '',
+                latitude=float(data['location_latitude']) if data.get('location_latitude') else None,
+                longitude=float(data['location_longitude']) if data.get('location_longitude') else None,
+                tag_ids=tag_ids or [],
+                severity=NCIssueSeverity[severity.upper()] if severity.upper() in NCIssueSeverity.__members__ else NCIssueSeverity.LOW,
                 severity_score=severity_score,
-                raised_by_user_id=user_id,
-                contractor_id=contractor_id,
+                raised_by_id=user_id,
+                assigned_contractor_id=contractor_id,
                 oversight_engineer_id=data.get('oversight_engineer_id'),
-                status='raised',
+                status=NCIssueStatus.RAISED,
                 raised_at=datetime.utcnow(),
-                score_month=datetime.utcnow().strftime('%Y-%m'),
+                score_month=datetime.utcnow().month,
                 score_year=datetime.utcnow().year,
-                score_week=datetime.utcnow().strftime('%Y-W%U')
+                score_week=datetime.utcnow().isocalendar()[1]
             )
             
             session.add(nc_issue)
@@ -309,7 +317,7 @@ def list_ncs():
                 return jsonify({'error': 'User not found'}), 404
             
             # Base query
-            query = session.query(ConcreteNCIssue).filter_by(company_id=user.company_id)
+            query = session.query(QualityNCIssue).filter_by(company_id=user.company_id)
             
             # Apply filters
             project_id = request.args.get('project_id')
@@ -317,8 +325,9 @@ def list_ncs():
                 query = query.filter_by(project_id=project_id)
             
             contractor_id = request.args.get('contractor_id')
+            contractor_id = request.args.get('contractor_id')
             if contractor_id:
-                query = query.filter_by(contractor_id=contractor_id)
+                query = query.filter_by(assigned_contractor_id=contractor_id)
             
             status = request.args.get('status')
             if status:
@@ -330,19 +339,21 @@ def list_ncs():
             
             # Date range filters
             start_date = request.args.get('start_date')
+            start_date = request.args.get('start_date')
             if start_date:
-                query = query.filter(ConcreteNCIssue.raised_at >= datetime.fromisoformat(start_date))
+                query = query.filter(QualityNCIssue.raised_at >= datetime.fromisoformat(start_date))
             
             end_date = request.args.get('end_date')
+            end_date = request.args.get('end_date')
             if end_date:
-                query = query.filter(ConcreteNCIssue.raised_at <= datetime.fromisoformat(end_date))
+                query = query.filter(QualityNCIssue.raised_at <= datetime.fromisoformat(end_date))
             
             # Pagination
             page = int(request.args.get('page', 1))
             per_page = int(request.args.get('per_page', 20))
             
             # Order by most recent
-            query = query.order_by(desc(ConcreteNCIssue.created_at))
+            query = query.order_by(desc(QualityNCIssue.created_at))
             
             # Execute query with pagination
             total = query.count()
@@ -372,7 +383,7 @@ def get_nc(nc_id):
             if not user:
                 return jsonify({'error': 'User not found'}), 404
             
-            nc = session.query(ConcreteNCIssue).filter_by(
+            nc = session.query(QualityNCIssue).filter_by(
                 id=nc_id,
                 company_id=user.company_id
             ).first()
@@ -398,30 +409,36 @@ def acknowledge_nc(nc_id):
             if not user:
                 return jsonify({'error': 'User not found'}), 404
             
-            nc = session.query(ConcreteNCIssue).filter_by(
+            nc = session.query(QualityNCIssue).filter_by(
                 id=nc_id,
                 company_id=user.company_id
             ).first()
             
             if not nc:
                 return jsonify({'error': 'NC not found'}), 404
-            
-            if nc.status != 'raised':
+
+            if getattr(nc, 'status', None) != NCIssueStatus.RAISED:
                 return jsonify({'error': 'NC can only be acknowledged when in raised status'}), 400
-            
+
             data = request.json or {}
-            
-            nc.status = 'acknowledged'
-            nc.acknowledged_at = datetime.utcnow()
-            nc.acknowledged_by_user_id = user_id
+
+            nc.status = NCIssueStatus.ACKNOWLEDGED
+            nc.contractor_acknowledged_at = datetime.utcnow()
+            nc.contractor_supervisor_id = user_id
             nc.contractor_remarks = data.get('remarks')
-            
+
             session.flush()
-            
+
             # Notify raiser and oversight engineer
-            send_nc_notification(nc, 'acknowledged', nc.raised_by_user_id, session)
+            try:
+                send_nc_notification(nc, 'acknowledged', nc.raised_by_id, session)
+            except Exception:
+                pass
             if nc.oversight_engineer_id:
-                send_nc_notification(nc, 'acknowledged', nc.oversight_engineer_id, session)
+                try:
+                    send_nc_notification(nc, 'acknowledged', nc.oversight_engineer_id, session)
+                except Exception:
+                    pass
             
             return jsonify({
                 'message': 'NC acknowledged successfully',
@@ -444,33 +461,39 @@ def respond_nc(nc_id):
             if not user:
                 return jsonify({'error': 'User not found'}), 404
             
-            nc = session.query(ConcreteNCIssue).filter_by(
+            nc = session.query(QualityNCIssue).filter_by(
                 id=nc_id,
                 company_id=user.company_id
             ).first()
             
             if not nc:
                 return jsonify({'error': 'NC not found'}), 404
-            
-            if nc.status not in ['raised', 'acknowledged']:
+
+            if getattr(nc, 'status', None) not in [NCIssueStatus.RAISED, NCIssueStatus.ACKNOWLEDGED]:
                 return jsonify({'error': 'Cannot respond to NC in current status'}), 400
-            
+
             data = request.json
-            
+
             if not data.get('response'):
                 return jsonify({'error': 'Response is required'}), 400
-            
-            nc.status = 'in_progress'
+
+            nc.status = NCIssueStatus.IN_PROGRESS
             nc.contractor_response = data['response']
-            nc.proposed_deadline = datetime.fromisoformat(data['proposed_deadline']) if data.get('proposed_deadline') else None
+            nc.deadline_date = datetime.fromisoformat(data['proposed_deadline']).date() if data.get('proposed_deadline') else None
             nc.responded_at = datetime.utcnow()
-            
+
             session.flush()
-            
+
             # Notify raiser and oversight engineer
-            send_nc_notification(nc, 'responded', nc.raised_by_user_id, session)
+            try:
+                send_nc_notification(nc, 'responded', nc.raised_by_id, session)
+            except Exception:
+                pass
             if nc.oversight_engineer_id:
-                send_nc_notification(nc, 'responded', nc.oversight_engineer_id, session)
+                try:
+                    send_nc_notification(nc, 'responded', nc.oversight_engineer_id, session)
+                except Exception:
+                    pass
             
             return jsonify({
                 'message': 'Response submitted successfully',
@@ -493,15 +516,15 @@ def resolve_nc(nc_id):
             if not user:
                 return jsonify({'error': 'User not found'}), 404
             
-            nc = session.query(ConcreteNCIssue).filter_by(
+            nc = session.query(QualityNCIssue).filter_by(
                 id=nc_id,
                 company_id=user.company_id
             ).first()
             
             if not nc:
                 return jsonify({'error': 'NC not found'}), 404
-            
-            if nc.status != 'in_progress':
+
+            if getattr(nc, 'status', None) != NCIssueStatus.IN_PROGRESS:
                 return jsonify({'error': 'NC must be in progress to resolve'}), 400
             
             # Handle resolution photo uploads
@@ -520,18 +543,24 @@ def resolve_nc(nc_id):
             
             data = request.form
             
-            nc.status = 'resolved'
-            nc.resolution_description = data.get('resolution_description')
-            nc.resolution_photo_urls = resolution_photos
-            nc.resolved_at = datetime.utcnow()
-            nc.resolved_by_user_id = user_id
+            nc.status = NCIssueStatus.RESOLVED
+            nc.contractor_action_taken = data.get('resolution_description')
+            nc.contractor_resolution_photos = resolution_photos
+            nc.contractor_resolved_at = datetime.utcnow()
+            nc.contractor_supervisor_id = user_id
             
             session.flush()
             
             # Notify raiser and oversight engineer for verification
-            send_nc_notification(nc, 'resolved', nc.raised_by_user_id, session)
+            try:
+                send_nc_notification(nc, 'resolved', nc.raised_by_id, session)
+            except Exception:
+                pass
             if nc.oversight_engineer_id:
-                send_nc_notification(nc, 'resolved', nc.oversight_engineer_id, session)
+                try:
+                    send_nc_notification(nc, 'resolved', nc.oversight_engineer_id, session)
+                except Exception:
+                    pass
             
             return jsonify({
                 'message': 'NC marked as resolved, awaiting verification',
@@ -554,27 +583,27 @@ def verify_nc(nc_id):
             if not user:
                 return jsonify({'error': 'User not found'}), 404
             
-            nc = session.query(ConcreteNCIssue).filter_by(
+            nc = session.query(QualityNCIssue).filter_by(
                 id=nc_id,
                 company_id=user.company_id
             ).first()
             
             if not nc:
                 return jsonify({'error': 'NC not found'}), 404
-            
-            if nc.status != 'resolved':
+
+            if getattr(nc, 'status', None) != NCIssueStatus.RESOLVED:
                 return jsonify({'error': 'NC must be resolved before verification'}), 400
-            
+
             # Only raiser or oversight engineer can verify
-            if user_id not in [nc.raised_by_user_id, nc.oversight_engineer_id]:
+            if user_id not in [nc.raised_by_id, nc.oversight_engineer_id]:
                 return jsonify({'error': 'Only raiser or oversight engineer can verify'}), 403
-            
+
             data = request.json or {}
-            
-            nc.status = 'verified'
+
+            nc.status = NCIssueStatus.VERIFIED
             nc.verified_at = datetime.utcnow()
-            nc.verified_by_user_id = user_id
-            nc.verification_remarks = data.get('remarks')
+            nc.verified_by_id = user_id
+            nc.verification_notes = data.get('remarks')
             
             session.flush()
             
@@ -603,39 +632,45 @@ def close_nc(nc_id):
             if not user:
                 return jsonify({'error': 'User not found'}), 404
             
-            nc = session.query(ConcreteNCIssue).filter_by(
+            nc = session.query(QualityNCIssue).filter_by(
                 id=nc_id,
                 company_id=user.company_id
             ).first()
             
             if not nc:
                 return jsonify({'error': 'NC not found'}), 404
-            
-            if nc.status != 'verified':
+
+            if getattr(nc, 'status', None) != NCIssueStatus.VERIFIED:
                 return jsonify({'error': 'NC must be verified before closing'}), 400
-            
+
             data = request.json or {}
-            
-            nc.status = 'closed'
+
+            nc.status = NCIssueStatus.CLOSED
             nc.closed_at = datetime.utcnow()
-            nc.closed_by_user_id = user_id
-            nc.closure_remarks = data.get('remarks')
-            
+            nc.closed_by_id = user_id
+            nc.closure_notes = data.get('remarks')
+
             # Calculate resolution time
-            if nc.resolved_at:
+            if getattr(nc, 'contractor_resolved_at', None):
                 resolution_time = (nc.closed_at - nc.raised_at).days
                 nc.actual_resolution_days = resolution_time
-            
+
             # Reset severity score since issue is closed
             nc.severity_score = 0.0
-            
+
             session.flush()
-            
+
             # Notify all stakeholders
-            if nc.contractor_id:
-                send_nc_notification(nc, 'closed', nc.contractor_id, session)
+            try:
+                if getattr(nc, 'assigned_contractor_id', None):
+                    send_nc_notification(nc, 'closed', nc.assigned_contractor_id, session)
+            except Exception:
+                pass
             if nc.oversight_engineer_id:
-                send_nc_notification(nc, 'closed', nc.oversight_engineer_id, session)
+                try:
+                    send_nc_notification(nc, 'closed', nc.oversight_engineer_id, session)
+                except Exception:
+                    pass
             
             return jsonify({
                 'message': 'NC closed successfully',
@@ -658,33 +693,39 @@ def reject_nc(nc_id):
             if not user:
                 return jsonify({'error': 'User not found'}), 404
             
-            nc = session.query(ConcreteNCIssue).filter_by(
+            nc = session.query(QualityNCIssue).filter_by(
                 id=nc_id,
                 company_id=user.company_id
             ).first()
             
             if not nc:
                 return jsonify({'error': 'NC not found'}), 404
-            
-            if nc.status not in ['raised', 'acknowledged']:
+
+            if getattr(nc, 'status', None) not in [NCIssueStatus.RAISED, NCIssueStatus.ACKNOWLEDGED]:
                 return jsonify({'error': 'Cannot reject NC in current status'}), 400
-            
+
             data = request.json
-            
+
             if not data.get('rejection_reason'):
                 return jsonify({'error': 'Rejection reason is required'}), 400
-            
-            nc.status = 'rejected'
+
+            nc.status = NCIssueStatus.REJECTED
             nc.rejection_reason = data['rejection_reason']
             nc.rejected_at = datetime.utcnow()
             nc.rejected_by_user_id = user_id
-            
+
             session.flush()
-            
+
             # Notify raiser and oversight engineer
-            send_nc_notification(nc, 'rejected', nc.raised_by_user_id, session)
+            try:
+                send_nc_notification(nc, 'rejected', nc.raised_by_id, session)
+            except Exception:
+                pass
             if nc.oversight_engineer_id:
-                send_nc_notification(nc, 'rejected', nc.oversight_engineer_id, session)
+                try:
+                    send_nc_notification(nc, 'rejected', nc.oversight_engineer_id, session)
+                except Exception:
+                    pass
             
             return jsonify({
                 'message': 'NC rejected',
@@ -707,7 +748,7 @@ def transfer_nc(nc_id):
             if not user:
                 return jsonify({'error': 'User not found'}), 404
             
-            nc = session.query(ConcreteNCIssue).filter_by(
+            nc = session.query(QualityNCIssue).filter_by(
                 id=nc_id,
                 company_id=user.company_id
             ).first()
@@ -727,32 +768,41 @@ def transfer_nc(nc_id):
             
             # Log transfer in history
             transfer_entry = {
-                'from_contractor_id': nc.contractor_id,
+                'from_contractor_id': nc.assigned_contractor_id,
                 'to_contractor_id': data['new_contractor_id'],
                 'transferred_at': datetime.utcnow().isoformat(),
                 'transferred_by_user_id': user_id,
                 'reason': data.get('reason')
             }
-            
+
             transfer_history = nc.transfer_history or []
             transfer_history.append(transfer_entry)
             nc.transfer_history = transfer_history
-            
+
             # Update contractor
-            old_contractor_id = nc.contractor_id
-            nc.contractor_id = data['new_contractor_id']
-            nc.status = 'transferred'
-            
+            old_contractor_id = nc.assigned_contractor_id
+            nc.assigned_contractor_id = data['new_contractor_id']
+            nc.status = NCIssueStatus.TRANSFERRED
+
             session.flush()
-            
-            # Notify both contractors
+
+            # Notify both contractors (best-effort)
             if old_contractor_id:
-                send_nc_notification(nc, 'transferred', old_contractor_id, session)
-            send_nc_notification(nc, 'transferred', data['new_contractor_id'], session)
-            
+                try:
+                    send_nc_notification(nc, 'transferred', old_contractor_id, session)
+                except Exception:
+                    pass
+            try:
+                send_nc_notification(nc, 'transferred', data['new_contractor_id'], session)
+            except Exception:
+                pass
+
             # Notify oversight engineer
             if nc.oversight_engineer_id:
-                send_nc_notification(nc, 'transferred', nc.oversight_engineer_id, session)
+                try:
+                    send_nc_notification(nc, 'transferred', nc.oversight_engineer_id, session)
+                except Exception:
+                    pass
             
             return jsonify({
                 'message': 'NC transferred successfully',
@@ -778,7 +828,7 @@ def get_dashboard():
             project_id = request.args.get('project_id')
             
             # Base query
-            base_query = session.query(ConcreteNCIssue).filter_by(company_id=user.company_id)
+            base_query = session.query(QualityNCIssue).filter_by(company_id=user.company_id)
             if project_id:
                 base_query = base_query.filter_by(project_id=project_id)
             
@@ -796,14 +846,14 @@ def get_dashboard():
             
             # Open issues (not closed)
             open_count = base_query.filter(
-                ConcreteNCIssue.status.in_(['raised', 'acknowledged', 'in_progress', 'resolved', 'verified', 'transferred'])
+                QualityNCIssue.status.in_(['raised', 'acknowledged', 'in_progress', 'resolved', 'verified', 'transferred'])
             ).count()
             
             # Overdue issues (past proposed deadline and not closed)
             overdue_count = base_query.filter(
                 and_(
-                    ConcreteNCIssue.proposed_deadline < datetime.utcnow(),
-                    ConcreteNCIssue.status != 'closed'
+                    QualityNCIssue.deadline_date < datetime.utcnow(),
+                    QualityNCIssue.status != 'closed'
                 )
             ).count()
             
@@ -895,22 +945,42 @@ def generate_report(report_type):
             if not project_id or not contractor_id:
                 return jsonify({'error': 'project_id and contractor_id are required'}), 400
             
-            # Determine period
+            # Determine period and build period filter using QualityNCIssue fields
             if report_type == 'monthly':
                 period = request.args.get('period', datetime.utcnow().strftime('%Y-%m'))
-                period_filter = ConcreteNCIssue.score_month == period
+                try:
+                    year_str, month_str = period.split('-')
+                    year = int(year_str)
+                    month = int(month_str)
+                except Exception:
+                    return jsonify({'error': 'Invalid monthly period format. Use YYYY-MM'}), 400
+                period_filter = and_(QualityNCIssue.score_year == year, QualityNCIssue.score_month == month)
             elif report_type == 'weekly':
-                period = request.args.get('period', datetime.utcnow().strftime('%Y-W%U'))
-                period_filter = ConcreteNCIssue.score_week == period
+                period = request.args.get('period', None)
+                if not period:
+                    now = datetime.utcnow()
+                    year, week, _ = now.isocalendar()
+                else:
+                    # Expecting 'YYYY-Www' or 'YYYY-W##'
+                    try:
+                        if '-W' in period:
+                            year_str, week_str = period.split('-W')
+                        else:
+                            year_str, week_str = period.split('-')
+                        year = int(year_str)
+                        week = int(week_str)
+                    except Exception:
+                        return jsonify({'error': 'Invalid weekly period format. Use YYYY-Www or YYYY-W##'}), 400
+                period_filter = and_(QualityNCIssue.score_year == year, QualityNCIssue.score_week == week)
             else:
                 return jsonify({'error': 'Invalid report_type. Use monthly or weekly'}), 400
-            
+
             # Get all issues for this contractor and period
-            issues = session.query(ConcreteNCIssue).filter(
+            issues = session.query(QualityNCIssue).filter(
                 and_(
-                    ConcreteNCIssue.company_id == user.company_id,
-                    ConcreteNCIssue.project_id == project_id,
-                    ConcreteNCIssue.contractor_id == contractor_id,
+                    QualityNCIssue.company_id == user.company_id,
+                    QualityNCIssue.project_id == project_id,
+                    QualityNCIssue.assigned_contractor_id == contractor_id,
                     period_filter
                 )
             ).all()
@@ -918,19 +988,21 @@ def generate_report(report_type):
             # Calculate scores with severity weighting
             severity_map = {'HIGH': 1.0, 'MODERATE': 0.5, 'LOW': 0.25}
             
-            high_count = sum(1 for nc in issues if nc.severity == 'HIGH' and nc.status != 'closed')
-            moderate_count = sum(1 for nc in issues if nc.severity == 'MODERATE' and nc.status != 'closed')
-            low_count = sum(1 for nc in issues if nc.severity == 'LOW' and nc.status != 'closed')
-            
-            closed_count = sum(1 for nc in issues if nc.status == 'closed')
+            # severity is an Enum; use .name for comparison (HIGH/MODERATE/LOW)
+            high_count = sum(1 for nc in issues if (nc.severity.name.upper() if nc.severity else '') == 'HIGH' and nc.status != NCIssueStatus.CLOSED)
+            moderate_count = sum(1 for nc in issues if (nc.severity.name.upper() if nc.severity else '') == 'MODERATE' and nc.status != NCIssueStatus.CLOSED)
+            low_count = sum(1 for nc in issues if (nc.severity.name.upper() if nc.severity else '') == 'LOW' and nc.status != NCIssueStatus.CLOSED)
+
+            closed_count = sum(1 for nc in issues if nc.status == NCIssueStatus.CLOSED)
             total_count = len(issues)
             
             # Calculate weighted score
-            total_severity_points = sum(severity_map.get(nc.severity, 0.5) for nc in issues)
-            closed_severity_points = sum(
-                severity_map.get(nc.severity, 0.5) 
-                for nc in issues if nc.status == 'closed'
-            )
+            def sev_value(nc):
+                key = (nc.severity.name.upper() if nc.severity else 'MODERATE')
+                return severity_map.get(key, 0.5)
+
+            total_severity_points = sum(sev_value(nc) for nc in issues)
+            closed_severity_points = sum(sev_value(nc) for nc in issues if nc.status == NCIssueStatus.CLOSED)
             
             total_score = (closed_severity_points / total_severity_points * 10) if total_severity_points > 0 else 10.0
             
@@ -953,16 +1025,29 @@ def generate_report(report_type):
             else:
                 grade = 'F'
             
-            # Check if report already exists
-            existing_report = session.query(ConcreteNCScoreReport).filter(
-                and_(
-                    ConcreteNCScoreReport.company_id == user.company_id,
-                    ConcreteNCScoreReport.project_id == project_id,
-                    ConcreteNCScoreReport.contractor_id == contractor_id,
-                    ConcreteNCScoreReport.report_type == report_type,
-                    ConcreteNCScoreReport.period == period
-                )
-            ).first()
+            # Check if report already exists (match by type and period)
+            if report_type == 'monthly':
+                existing_report = session.query(ConcreteNCScoreReport).filter(
+                    and_(
+                        ConcreteNCScoreReport.company_id == user.company_id,
+                        ConcreteNCScoreReport.project_id == project_id,
+                        ConcreteNCScoreReport.contractor_id == contractor_id,
+                        ConcreteNCScoreReport.report_type == report_type,
+                        ConcreteNCScoreReport.report_year == year,
+                        ConcreteNCScoreReport.report_month == month
+                    )
+                ).first()
+            else:
+                existing_report = session.query(ConcreteNCScoreReport).filter(
+                    and_(
+                        ConcreteNCScoreReport.company_id == user.company_id,
+                        ConcreteNCScoreReport.project_id == project_id,
+                        ConcreteNCScoreReport.contractor_id == contractor_id,
+                        ConcreteNCScoreReport.report_type == report_type,
+                        ConcreteNCScoreReport.report_year == year,
+                        ConcreteNCScoreReport.report_week == week
+                    )
+                ).first()
             
             if existing_report:
                 # Update existing report
@@ -981,12 +1066,17 @@ def generate_report(report_type):
                 report = existing_report
             else:
                 # Create new report
+                # Create new report record (populate year/month or week accordingly)
                 report = ConcreteNCScoreReport(
                     company_id=user.company_id,
                     project_id=project_id,
                     contractor_id=contractor_id,
                     report_type=report_type,
-                    period=period,
+                    report_year=year,
+                    report_month=month if report_type == 'monthly' else None,
+                    report_week=week if report_type == 'weekly' else None,
+                    report_period_start=datetime.utcnow().date(),
+                    report_period_end=datetime.utcnow().date(),
                     high_severity_count=high_count,
                     moderate_severity_count=moderate_count,
                     low_severity_count=low_count,
@@ -997,7 +1087,7 @@ def generate_report(report_type):
                     closure_rate=closure_rate,
                     avg_resolution_days=avg_resolution_days,
                     performance_grade=grade,
-                    generated_by_user_id=user_id,
+                    generated_by_id=user_id,
                     generated_at=datetime.utcnow()
                 )
                 session.add(report)
@@ -1025,7 +1115,7 @@ def add_photos(nc_id):
             if not user:
                 return jsonify({'error': 'User not found'}), 404
             
-            nc = session.query(ConcreteNCIssue).filter_by(
+            nc = session.query(QualityNCIssue).filter_by(
                 id=nc_id,
                 company_id=user.company_id
             ).first()
@@ -1061,5 +1151,86 @@ def add_photos(nc_id):
                 'nc': nc.to_dict()
             }), 200
             
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@concrete_nc_bp.route('/<int:nc_id>/responses', methods=['GET'])
+@jwt_required()
+@require_module("concrete_nc")
+def list_responses(nc_id):
+    """List structured responses for a given NC issue."""
+    try:
+        with session_scope() as session:
+            user_id = get_jwt_identity()
+            user = session.query(User).filter_by(id=user_id).first()
+
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+
+            nc = session.query(QualityNCIssue).filter_by(id=nc_id, company_id=user.company_id).first()
+            if not nc:
+                return jsonify({'error': 'NC not found'}), 404
+
+            responses = session.query(NCResponse).filter_by(nc_issue_id=nc_id, company_id=user.company_id).order_by(NCResponse.created_at).all()
+
+            return jsonify({'responses': [r.to_dict() for r in responses]}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@concrete_nc_bp.route('/<int:nc_id>/responses', methods=['POST'])
+@jwt_required()
+@require_module("concrete_nc")
+def create_response(nc_id):
+    """Create a structured response entry for an NC (with optional attachments)."""
+    try:
+        with session_scope() as session:
+            user_id = get_jwt_identity()
+            user = session.query(User).filter_by(id=user_id).first()
+
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+
+            nc = session.query(QualityNCIssue).filter_by(id=nc_id, company_id=user.company_id).first()
+            if not nc:
+                return jsonify({'error': 'NC not found'}), 404
+
+            # Accept JSON or form-data
+            data = request.form if request.form else (request.json or {})
+
+            if not data.get('response_text'):
+                return jsonify({'error': 'response_text is required'}), 400
+
+            # Handle attachments
+            attachments = []
+            files = request.files
+            if 'attachments' in files:
+                file_list = files.getlist('attachments')
+                for f in file_list:
+                    if f and allowed_file(f.filename):
+                        filename = secure_filename(f.filename)
+                        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                        filename = f"response_{timestamp}_{filename}"
+                        filepath = os.path.join(UPLOAD_FOLDER, filename)
+                        f.save(filepath)
+                        attachments.append(filepath)
+
+            response = NCResponse(
+                company_id=user.company_id,
+                project_id=nc.project_id,
+                nc_issue_id=nc.id,
+                responder_user_id=user_id,
+                response_text=data.get('response_text'),
+                response_type=data.get('response_type', 'update'),
+                attachments=attachments
+            )
+
+            session.add(response)
+            session.flush()
+
+            return jsonify({'message': 'Response added', 'response': response.to_dict()}), 201
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500

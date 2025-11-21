@@ -11,8 +11,7 @@ from flask_cors import CORS
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 from PIL import Image
-from db import init_db, session_scope
-# from .db import init_db, session_scope
+from .db import init_db, session_scope
 from .models import MixDesign
 from .config import get_config
 from .auth import auth_bp, init_jwt
