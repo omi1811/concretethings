@@ -1,15 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Beaker, ArrowLeft, User, Calendar, CheckCircle, 
+import {
+  Beaker, ArrowLeft, User, Calendar, CheckCircle,
   AlertCircle, Edit2, FileText, Package, Scale,
-  Droplet, ThermometerSun, Clock, Shield, Info
+  Droplet, ThermometerSun, Clock, Shield, Info,
+  Loader2, X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
+import { Textarea } from '@/components/ui/Input';
+import { Alert } from '@/components/ui/Alert';
+import { CONCRETE_EXPOSURE_LIMITS, getGradeValue } from '@/utils/standards';
 
 export default function MixDesignDetailsPage({ params }) {
   const router = useRouter();
@@ -19,6 +27,13 @@ export default function MixDesignDetailsPage({ params }) {
   const [showEditMode, setShowEditMode] = useState(false);
   const [approvalComments, setApprovalComments] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const exposure = mixDesign?.exposure_condition || 'Mild';
+  const normalizedExposure = Object.keys(CONCRETE_EXPOSURE_LIMITS).find(
+    k => k.toLowerCase() === exposure.toLowerCase()
+  ) || 'Mild';
+  const limits = CONCRETE_EXPOSURE_LIMITS[normalizedExposure];
+  const gradeValue = mixDesign ? getGradeValue(mixDesign.grade) : 0;
 
   useEffect(() => {
     fetchMixDesignDetails();
@@ -79,85 +94,83 @@ export default function MixDesignDetailsPage({ params }) {
     }
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      draft: 'gray',
-      pending_approval: 'yellow',
-      approved: 'green',
-      rejected: 'red',
-      revised: 'blue'
+  const getStatusBadge = (status) => {
+    const variants = {
+      draft: { variant: 'secondary', label: 'Draft' },
+      pending_approval: { variant: 'warning', label: 'Pending Approval' },
+      approved: { variant: 'success', label: 'Approved' },
+      rejected: { variant: 'destructive', label: 'Rejected' },
+      revised: { variant: 'info', label: 'Revised' }
     };
-    return colors[status] || 'gray';
+    const config = variants[status] || variants.draft;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   const getComplianceIcon = (compliant) => {
     return compliant ? (
-      <CheckCircle className="w-5 h-5 text-green-600" />
+      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
     ) : (
-      <AlertCircle className="w-5 h-5 text-red-600" />
+      <AlertCircle className="w-5 h-5 text-destructive" />
     );
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-16 h-16 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+      <div className="flex flex-col justify-center items-center min-h-[60vh] gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <p className="text-muted-foreground">Loading mix design...</p>
       </div>
     );
   }
 
   if (!mixDesign) {
     return (
-      <div className="p-6 text-center">
-        <Beaker className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Mix Design Not Found</h2>
-        <p className="text-gray-600 mb-4">The requested mix design could not be found.</p>
-        <Link href="/dashboard/mix-designs" className="text-blue-600 hover:underline">
-          Back to Mix Designs
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
+        <div className="bg-muted p-4 rounded-full">
+          <Beaker className="w-10 h-10 text-muted-foreground" />
+        </div>
+        <h2 className="text-xl font-semibold text-foreground">Mix Design Not Found</h2>
+        <p className="text-muted-foreground">The requested mix design could not be found.</p>
+        <Link href="/dashboard/mix-designs">
+          <Button variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Mix Designs
+          </Button>
         </Link>
       </div>
     );
   }
 
-  const statusColor = getStatusColor(mixDesign.status);
-
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="mb-6">
-        <Link 
-          href="/dashboard/mix-designs"
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Mix Designs
-        </Link>
-
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Beaker className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{mixDesign.mix_id}</h1>
-              <p className="text-sm text-gray-600">Concrete Mix Design Details</p>
-            </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-muted-foreground mb-2">
+            <Link href="/dashboard/mix-designs" className="hover:text-foreground transition-colors flex items-center gap-1 text-sm">
+              <ArrowLeft className="w-4 h-4" />
+              Back to List
+            </Link>
           </div>
-
-          <div className="flex gap-2 items-center">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium bg-${statusColor}-100 text-${statusColor}-700`}>
-              {mixDesign.status.replace(/_/g, ' ').charAt(0).toUpperCase() + mixDesign.status.slice(1).replace(/_/g, ' ')}
-            </span>
-            {mixDesign.status === 'approved' && (
-              <button
-                onClick={() => setShowEditMode(true)}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-                title="Edit Mix Design"
-              >
-                <Edit2 className="w-5 h-5" />
-              </button>
-            )}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{mixDesign.mix_id}</h1>
+            {getStatusBadge(mixDesign.status)}
           </div>
+          <p className="text-muted-foreground flex items-center gap-2">
+            Concrete Mix Design Details
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          {mixDesign.status === 'approved' && (
+            <Button
+              variant="outline"
+              onClick={() => setShowEditMode(true)}
+            >
+              <Edit2 className="w-4 h-4 mr-2" />
+              Edit
+            </Button>
+          )}
         </div>
       </div>
 
@@ -166,357 +179,390 @@ export default function MixDesignDetailsPage({ params }) {
         {/* Left Column - Mix Details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Basic Information */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-gray-600" />
-              Mix Specifications
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Concrete Grade</p>
-                <p className="font-bold text-lg">{mixDesign.grade}</p>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Mix Specifications
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Concrete Grade</p>
+                  <p className="font-bold text-lg text-foreground">{mixDesign.grade}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Design Strength</p>
+                  <p className="font-medium text-foreground">{mixDesign.design_strength} MPa</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">W/C Ratio</p>
+                  <p className="font-medium text-foreground">{mixDesign.water_cement_ratio}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Slump</p>
+                  <p className="font-medium text-foreground">{mixDesign.slump} mm</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Max Aggregate</p>
+                  <p className="font-medium text-foreground">{mixDesign.max_aggregate_size} mm</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Exposure</p>
+                  <p className="font-medium text-foreground">{mixDesign.exposure_condition || 'Normal'}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Design Strength</p>
-                <p className="font-medium">{mixDesign.design_strength} MPa</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">W/C Ratio</p>
-                <p className="font-medium">{mixDesign.water_cement_ratio}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Slump</p>
-                <p className="font-medium">{mixDesign.slump} mm</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Max Aggregate</p>
-                <p className="font-medium">{mixDesign.max_aggregate_size} mm</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Exposure</p>
-                <p className="font-medium">{mixDesign.exposure_condition || 'Normal'}</p>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Material Proportions */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Package className="w-5 h-5 text-gray-600" />
-              Material Proportions (per m³)
-            </h2>
-            
-            <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="w-5 h-5 text-primary" />
+                Material Proportions (per m³)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               {/* Cement */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <Scale className="w-5 h-5 text-gray-600" />
+                  <Scale className="w-5 h-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">Cement</p>
-                    <p className="text-sm text-gray-600">{mixDesign.cement_type || 'OPC 43'}</p>
+                    <p className="font-medium text-foreground">Cement</p>
+                    <p className="text-sm text-muted-foreground">{mixDesign.cement_type || 'OPC 43'}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-lg">{mixDesign.cement_content} kg</p>
+                  <p className="font-bold text-lg text-foreground">{mixDesign.cement_content} kg</p>
                 </div>
               </div>
 
               {/* Water */}
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <Droplet className="w-5 h-5 text-blue-600" />
+                  <Droplet className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   <div>
-                    <p className="font-medium">Water</p>
-                    <p className="text-sm text-gray-600">Potable water</p>
+                    <p className="font-medium text-foreground">Water</p>
+                    <p className="text-sm text-muted-foreground">Potable water</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-lg">{mixDesign.water_content} L</p>
+                  <p className="font-bold text-lg text-foreground">{mixDesign.water_content} L</p>
                 </div>
               </div>
 
               {/* Fine Aggregate */}
-              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <Package className="w-5 h-5 text-yellow-600" />
+                  <Package className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                   <div>
-                    <p className="font-medium">Fine Aggregate</p>
-                    <p className="text-sm text-gray-600">Sand</p>
+                    <p className="font-medium text-foreground">Fine Aggregate</p>
+                    <p className="text-sm text-muted-foreground">Sand</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-lg">{mixDesign.fine_aggregate} kg</p>
+                  <p className="font-bold text-lg text-foreground">{mixDesign.fine_aggregate} kg</p>
                 </div>
               </div>
 
               {/* Coarse Aggregate */}
-              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <Package className="w-5 h-5 text-orange-600" />
+                  <Package className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                   <div>
-                    <p className="font-medium">Coarse Aggregate</p>
-                    <p className="text-sm text-gray-600">{mixDesign.max_aggregate_size}mm down</p>
+                    <p className="font-medium text-foreground">Coarse Aggregate</p>
+                    <p className="text-sm text-muted-foreground">{mixDesign.max_aggregate_size}mm down</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-lg">{mixDesign.coarse_aggregate} kg</p>
+                  <p className="font-bold text-lg text-foreground">{mixDesign.coarse_aggregate} kg</p>
                 </div>
               </div>
 
               {/* Admixtures */}
               {mixDesign.admixture_type && (
-                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <Beaker className="w-5 h-5 text-purple-600" />
+                    <Beaker className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     <div>
-                      <p className="font-medium">Admixture</p>
-                      <p className="text-sm text-gray-600">{mixDesign.admixture_type}</p>
+                      <p className="font-medium text-foreground">Admixture</p>
+                      <p className="text-sm text-muted-foreground">{mixDesign.admixture_type}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-lg">{mixDesign.admixture_dosage} L</p>
+                    <p className="font-bold text-lg text-foreground">{mixDesign.admixture_dosage} L</p>
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Mix Ratio Summary */}
-            <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Mix Ratio by Weight</p>
-              <p className="font-bold text-xl">
-                1 : {(mixDesign.fine_aggregate / mixDesign.cement_content).toFixed(2)} : {(mixDesign.coarse_aggregate / mixDesign.cement_content).toFixed(2)}
-              </p>
-              <p className="text-xs text-gray-600 mt-1">Cement : Sand : Coarse Aggregate</p>
-            </div>
-          </div>
+              {/* Mix Ratio Summary */}
+              <div className="mt-4 p-4 bg-muted rounded-lg text-center">
+                <p className="text-sm font-medium text-muted-foreground mb-1">Mix Ratio by Weight</p>
+                <p className="font-bold text-xl text-foreground tracking-wide">
+                  1 : {(mixDesign.fine_aggregate / mixDesign.cement_content).toFixed(2)} : {(mixDesign.coarse_aggregate / mixDesign.cement_content).toFixed(2)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Cement : Sand : Coarse Aggregate</p>
+              </div>
+            </CardContent>
+          </Card>
+
+
 
           {/* Compliance Checks */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-gray-600" />
-              Compliance Checks
-            </h2>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary" />
+                Compliance Checks (IS 456:2000)
+              </CardTitle>
+              <CardDescription>
+                Based on {normalizedExposure} exposure condition
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* W/C Ratio Check */}
+              <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
-                  {getComplianceIcon(mixDesign.water_cement_ratio <= 0.5)}
+                  {getComplianceIcon(mixDesign.water_cement_ratio <= limits.maxWaterCementRatio)}
                   <div>
-                    <p className="font-medium">W/C Ratio</p>
-                    <p className="text-sm text-gray-600">Must be ≤ 0.50 for normal exposure</p>
+                    <p className="font-medium text-foreground">W/C Ratio</p>
+                    <p className="text-sm text-muted-foreground">
+                      Must be ≤ {limits.maxWaterCementRatio.toFixed(2)}
+                    </p>
                   </div>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  mixDesign.water_cement_ratio <= 0.5 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
-                  {mixDesign.water_cement_ratio <= 0.5 ? 'PASS' : 'FAIL'}
-                </span>
+                <Badge variant={mixDesign.water_cement_ratio <= limits.maxWaterCementRatio ? 'success' : 'destructive'}>
+                  {mixDesign.water_cement_ratio <= limits.maxWaterCementRatio ? 'PASS' : 'FAIL'}
+                </Badge>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              {/* Min Cement Content Check */}
+              <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
-                  {getComplianceIcon(mixDesign.cement_content >= 300)}
+                  {getComplianceIcon(mixDesign.cement_content >= limits.minCementContent)}
                   <div>
-                    <p className="font-medium">Minimum Cement Content</p>
-                    <p className="text-sm text-gray-600">Must be ≥ 300 kg/m³</p>
+                    <p className="font-medium text-foreground">Min Cement Content</p>
+                    <p className="text-sm text-muted-foreground">
+                      Must be ≥ {limits.minCementContent} kg/m³
+                    </p>
                   </div>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  mixDesign.cement_content >= 300 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
-                  {mixDesign.cement_content >= 300 ? 'PASS' : 'FAIL'}
-                </span>
+                <Badge variant={mixDesign.cement_content >= limits.minCementContent ? 'success' : 'destructive'}>
+                  {mixDesign.cement_content >= limits.minCementContent ? 'PASS' : 'FAIL'}
+                </Badge>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              {/* Min Grade Check */}
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  {getComplianceIcon(gradeValue >= limits.minGrade)}
+                  <div>
+                    <p className="font-medium text-foreground">Minimum Grade</p>
+                    <p className="text-sm text-muted-foreground">
+                      Must be ≥ M{limits.minGrade}
+                    </p>
+                  </div>
+                </div>
+                <Badge variant={gradeValue >= limits.minGrade ? 'success' : 'destructive'}>
+                  {gradeValue >= limits.minGrade ? 'PASS' : 'FAIL'}
+                </Badge>
+              </div>
+
+              {/* Slump Check (Standard Range) */}
+              <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
                   {getComplianceIcon(mixDesign.slump >= 25 && mixDesign.slump <= 150)}
                   <div>
-                    <p className="font-medium">Slump Range</p>
-                    <p className="text-sm text-gray-600">Should be 25-150 mm</p>
+                    <p className="font-medium text-foreground">Slump Range</p>
+                    <p className="text-sm text-muted-foreground">Should be 25-150 mm</p>
                   </div>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  mixDesign.slump >= 25 && mixDesign.slump <= 150 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                }`}>
+                <Badge variant={mixDesign.slump >= 25 && mixDesign.slump <= 150 ? 'success' : 'warning'}>
                   {mixDesign.slump >= 25 && mixDesign.slump <= 150 ? 'PASS' : 'CHECK'}
-                </span>
+                </Badge>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Additional Notes */}
           {mixDesign.notes && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Info className="w-5 h-5 text-gray-600" />
-                Additional Notes
-              </h2>
-              <p className="text-gray-700 whitespace-pre-wrap">{mixDesign.notes}</p>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="w-5 h-5 text-primary" />
+                  Additional Notes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground whitespace-pre-wrap">{mixDesign.notes}</p>
+              </CardContent>
+            </Card>
           )}
         </div>
 
         {/* Right Column - Timeline & Actions */}
         <div className="space-y-6">
           {/* Timeline */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-gray-600" />
-              Timeline
-            </h2>
-            <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary" />
+                Timeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Created Date</p>
-                <p className="font-medium">{format(new Date(mixDesign.created_date), 'PPP')}</p>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Created Date</p>
+                <p className="font-medium text-foreground">{format(new Date(mixDesign.created_date), 'PPP')}</p>
               </div>
               {mixDesign.approved_date && (
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Approved Date</p>
-                  <p className="font-medium">{format(new Date(mixDesign.approved_date), 'PPP')}</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Approved Date</p>
+                  <p className="font-medium text-foreground">{format(new Date(mixDesign.approved_date), 'PPP')}</p>
                 </div>
               )}
               {mixDesign.revision_number > 0 && (
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Revision</p>
-                  <p className="font-medium">Rev. {mixDesign.revision_number}</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Revision</p>
+                  <p className="font-medium text-foreground">Rev. {mixDesign.revision_number}</p>
                 </div>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Created By */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <User className="w-5 h-5 text-gray-600" />
-              Design Team
-            </h2>
-            <div className="space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5 text-primary" />
+                Design Team
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Designed By</p>
-                <p className="font-medium">{mixDesign.designed_by_name || 'Unknown'}</p>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Designed By</p>
+                <p className="font-medium text-foreground">{mixDesign.designed_by_name || 'Unknown'}</p>
               </div>
               {mixDesign.approved_by_name && (
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Approved By</p>
-                  <p className="font-medium">{mixDesign.approved_by_name}</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Approved By</p>
+                  <p className="font-medium text-foreground">{mixDesign.approved_by_name}</p>
                 </div>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Actions */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4">Actions</h2>
-            <div className="space-y-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
               {mixDesign.status === 'pending_approval' && (
                 <>
-                  <button
+                  <Button
                     onClick={() => setShowApprovalModal(true)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                    className="w-full bg-green-600 hover:bg-green-700"
                   >
-                    <CheckCircle className="w-4 h-4" />
+                    <CheckCircle className="w-4 h-4 mr-2" />
                     Approve Mix Design
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowApprovalModal(true);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                  </Button>
+                  <Button
+                    onClick={() => setShowApprovalModal(true)}
+                    variant="destructive"
+                    className="w-full"
                   >
-                    <AlertCircle className="w-4 h-4" />
+                    <AlertCircle className="w-4 h-4 mr-2" />
                     Reject Mix Design
-                  </button>
+                  </Button>
                 </>
               )}
 
               {mixDesign.status === 'approved' && (
-                <div className="flex items-center justify-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg">
+                <div className="flex items-center justify-center gap-2 px-4 py-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-medium">
                   <CheckCircle className="w-4 h-4" />
                   Mix Design Approved
                 </div>
               )}
 
               {mixDesign.status === 'draft' && (
-                <button
+                <Button
                   onClick={() => router.push(`/dashboard/mix-designs/${params.id}/edit`)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="w-full"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit2 className="w-4 h-4 mr-2" />
                   Edit Mix Design
-                </button>
+                </Button>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Application Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex gap-3">
-              <ThermometerSun className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-blue-800">
-                <p className="font-medium mb-1">Application</p>
-                <p>This mix design is suitable for structural concrete work in normal exposure conditions.</p>
-              </div>
+          <Alert variant="info" className="bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
+            <ThermometerSun className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <div>
+              <p className="font-medium text-blue-900 dark:text-blue-300">Application</p>
+              <p className="text-sm mt-1 text-blue-700 dark:text-blue-400">
+                This mix design is suitable for structural concrete work in normal exposure conditions.
+              </p>
             </div>
-          </div>
+          </Alert>
 
           {/* Validity Period */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex gap-3">
-              <Clock className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-yellow-800">
-                <p className="font-medium mb-1">Validity</p>
-                <p>Mix design valid for 1 year from approval date. Re-approval required after expiry.</p>
-              </div>
+          <Alert variant="warning" className="bg-yellow-50/50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800">
+            <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+            <div>
+              <p className="font-medium text-yellow-900 dark:text-yellow-300">Validity</p>
+              <p className="text-sm mt-1 text-yellow-700 dark:text-yellow-400">
+                Mix design valid for 1 year from approval date. Re-approval required after expiry.
+              </p>
             </div>
-          </div>
+          </Alert>
         </div>
       </div>
 
       {/* Approval Modal */}
-      {showApprovalModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full p-6">
-            <h2 className="text-xl font-bold mb-4">Approve/Reject Mix Design</h2>
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Comments*
-              </label>
-              <textarea
-                value={approvalComments}
-                onChange={(e) => setApprovalComments(e.target.value)}
-                rows={4}
-                placeholder="Add approval/rejection comments..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+      <Modal
+        isOpen={showApprovalModal}
+        onClose={() => setShowApprovalModal(false)}
+        title="Approve/Reject Mix Design"
+      >
+        <div className="space-y-4">
+          <Textarea
+            label="Comments"
+            value={approvalComments}
+            onChange={(e) => setApprovalComments(e.target.value)}
+            rows={4}
+            placeholder="Add approval/rejection comments..."
+            required
+          />
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowApprovalModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleApproval(false)}
-                disabled={submitting}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
-              >
-                Reject
-              </button>
-              <button
-                onClick={() => handleApproval(true)}
-                disabled={submitting}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
-              >
-                Approve
-              </button>
-            </div>
+          <div className="flex gap-3 justify-end mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowApprovalModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => handleApproval(false)}
+              disabled={submitting}
+            >
+              Reject
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => handleApproval(true)}
+              disabled={submitting}
+            >
+              Approve
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

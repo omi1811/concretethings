@@ -15,21 +15,9 @@ from server.db import Base
 
 
 
-# Database session wrapper for backward compatibility with Flask-SQLAlchemy style code
-class _DBWrapper:
-    """
-    Wrapper to provide db.session compatibility for legacy code.
-    New code should use session_scope() context manager instead.
-    
-    This uses SQLAlchemy's scoped_session which is thread-local and request-safe.
-    """
-    @property
-    def session(self):
-        """Returns the scoped session (thread-local, auto-managed by SQLAlchemy)."""
-        return SessionLocal
-
-# Create a global db instance for backward compatibility
-db = _DBWrapper()
+# Import db from server.db for backward compatibility
+# This avoids circular import issues while maintaining the same API
+from server.db import db
 
 
 class Company(Base):
@@ -517,7 +505,7 @@ class PourActivity(Base):
     location_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     # Concrete Details
-    concrete_type: Mapped[str] = mapped_column(String(20), default="Normal")  # Normal or PT (Post-Tensioned)
+    concrete_type: Mapped[str] = mapped_column(String(50), default="Normal")  # Normal, Free Flow, PT
     design_grade: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # e.g., M30, M40
     total_quantity_planned: Mapped[float] = mapped_column(Float, nullable=False)  # Total m³ planned
     total_quantity_received: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # Actual total from batches
@@ -691,7 +679,7 @@ class CubeTestRegister(Base):
     __tablename__ = "cube_test_registers"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    batch_id: Mapped[int] = mapped_column(Integer, ForeignKey("batch_registers.id"), nullable=False)
+    batch_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("batch_registers.id"), nullable=True)
     project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id"), nullable=False)
     
     # Test Set Identification

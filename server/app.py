@@ -26,6 +26,7 @@ from .material_tests import material_tests_bp
 from .training_register import training_register_bp
 from .support_admin import support_bp
 from .pour_activities import pour_activities_bp
+from .reports import reports_bp
 from .batch_import import batch_import_bp
 from .material_vehicle_register import material_vehicle_bp
 from .project_settings import project_settings_bp
@@ -115,6 +116,9 @@ def create_app() -> Flask:
     
     # Register pour activity blueprint (batch consolidation)
     app.register_blueprint(pour_activities_bp)
+    
+    # Register reports blueprint
+    app.register_blueprint(reports_bp)
     
     # Register batch import blueprint (for sites where security manages vehicle entry)
     app.register_blueprint(batch_import_bp)
@@ -208,7 +212,14 @@ def create_app() -> Flask:
     def internal_error(error):
         logger.error(f"Internal server error: {error}")
         import traceback
-        logger.error(traceback.format_exc())
+        trace = traceback.format_exc()
+        logger.error(trace)
+        try:
+            with open(r"C:\Users\shrot\OneDrive\Desktop\ProSite\concretethings\server_error_global.log", "a") as f:
+                f.write(f"Internal server error: {error}\n")
+                f.write(trace)
+        except:
+            pass
         return jsonify({"error": "Internal server error"}), 500
     
     @app.errorhandler(413)

@@ -246,6 +246,10 @@ def get_cube_tests():
                         else:
                             test_dict['mix_design_name'] = None
                             test_dict['mix_design_grade'] = None
+                else:
+                    test_dict['batch_number'] = "Planned"
+                    test_dict['mix_design_name'] = None
+                    test_dict['mix_design_grade'] = test.concrete_grade
                 
                 result.append(test_dict)
             
@@ -458,14 +462,32 @@ def update_cube_test(test_id):
             if not test:
                 return jsonify({"error": "Cube test not found"}), 404
             
-            # Update cube strengths
-            if 'cube_1_strength_mpa' in data:
-                test.cube_1_strength_mpa = float(data['cube_1_strength_mpa']) if data['cube_1_strength_mpa'] else None
-            if 'cube_2_strength_mpa' in data:
-                test.cube_2_strength_mpa = float(data['cube_2_strength_mpa']) if data['cube_2_strength_mpa'] else None
-            if 'cube_3_strength_mpa' in data:
-                test.cube_3_strength_mpa = float(data['cube_3_strength_mpa']) if data['cube_3_strength_mpa'] else None
-            
+            # Update cube strengths/loads
+            for i in range(1, 4):
+                load_key = f'cube_{i}_load_kn'
+                strength_key = f'cube_{i}_strength_mpa'
+                
+                # Handle Load Input
+                if load_key in data:
+                    load = float(data[load_key]) if data[load_key] else None
+                    setattr(test, load_key, load)
+                    
+                    if load is not None:
+                        # Calculate Strength: (Load * 1000) / Area
+                        # Default to 150x150mm if dimensions not provided
+                        length = getattr(test, f'cube_{i}_length_mm') or 150.0
+                        width = getattr(test, f'cube_{i}_width_mm') or 150.0
+                        area = length * width
+                        strength = round((load * 1000) / area, 2)
+                        setattr(test, strength_key, strength)
+                    else:
+                        setattr(test, strength_key, None)
+                
+                # Handle Direct Strength Input (overrides calculated if provided)
+                elif strength_key in data:
+                    strength = float(data[strength_key]) if data[strength_key] else None
+                    setattr(test, strength_key, strength)
+
             # Update testing date
             if 'testing_date' in data:
                 try:

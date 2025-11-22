@@ -6,17 +6,17 @@ export function Spinner({ size = 'md', className }) {
     md: 'w-8 h-8',
     lg: 'w-12 h-12'
   };
-  
+
   return (
-    <div className={cn('animate-spin rounded-full border-4 border-gray-200 border-t-blue-600', sizes[size], className)} />
+    <div className={cn('animate-spin rounded-full border-4 border-muted border-t-primary', sizes[size], className)} />
   );
 }
 
 export function LoadingScreen({ message = 'Loading...' }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
       <Spinner size="lg" />
-      <p className="mt-4 text-gray-600">{message}</p>
+      <p className="mt-4 text-muted-foreground">{message}</p>
     </div>
   );
 }

@@ -1,89 +1,89 @@
 import { cn } from '@/lib/utils';
 
-export function Input({ 
-  label, 
-  error, 
-  className, 
+export function Input({
+  label,
+  error,
+  className,
   type = 'text',
   required,
-  ...props 
+  ...props
 }) {
   return (
-    <div className="w-full">
+    <div className="w-full space-y-2">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-destructive ml-1">*</span>}
         </label>
       )}
       <input
         type={type}
         className={cn(
-          'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-gray-900',
-          error && 'border-red-500 focus:ring-red-500 focus:border-red-500',
+          'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+          error && 'border-destructive focus-visible:ring-destructive',
           className
         )}
         {...props}
       />
       {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
+        <p className="text-sm font-medium text-destructive">{error}</p>
       )}
     </div>
   );
 }
 
-export function Textarea({ 
-  label, 
-  error, 
-  className, 
+export function Textarea({
+  label,
+  error,
+  className,
   rows = 3,
   required,
-  ...props 
+  ...props
 }) {
   return (
-    <div className="w-full">
+    <div className="w-full space-y-2">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-destructive ml-1">*</span>}
         </label>
       )}
       <textarea
         rows={rows}
         className={cn(
-          'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-y text-gray-900',
-          error && 'border-red-500 focus:ring-red-500 focus:border-red-500',
+          'flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+          error && 'border-destructive focus-visible:ring-destructive',
           className
         )}
         {...props}
       />
       {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
+        <p className="text-sm font-medium text-destructive">{error}</p>
       )}
     </div>
   );
 }
 
-export function Select({ 
-  label, 
-  error, 
-  className, 
+export function Select({
+  label,
+  error,
+  className,
   children,
   required,
-  ...props 
+  ...props
 }) {
   return (
-    <div className="w-full">
+    <div className="w-full space-y-2">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-destructive ml-1">*</span>}
         </label>
       )}
       <select
         className={cn(
-          'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white text-gray-900',
-          error && 'border-red-500 focus:ring-red-500 focus:border-red-500',
+          'flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+          error && 'border-destructive focus:ring-destructive',
           className
         )}
         {...props}
@@ -91,7 +91,7 @@ export function Select({
         {children}
       </select>
       {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
+        <p className="text-sm font-medium text-destructive">{error}</p>
       )}
     </div>
   );

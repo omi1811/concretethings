@@ -4,13 +4,13 @@ import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function Modal({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
   size = 'md',
-  className 
+  className
 }) {
   useEffect(() => {
     if (isOpen) {
@@ -18,14 +18,14 @@ export function Modal({
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
-  
+
   if (!isOpen) return null;
-  
+
   const sizes = {
     sm: 'max-w-md',
     md: 'max-w-2xl',
@@ -33,20 +33,20 @@ export function Modal({
     xl: 'max-w-6xl',
     full: 'max-w-full mx-4'
   };
-  
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+      <div
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div 
+        <div
           className={cn(
-            'relative bg-white rounded-lg shadow-xl w-full',
+            'relative bg-card text-card-foreground rounded-lg shadow-xl border border-border w-full',
             sizes[size],
             className
           )}
@@ -54,17 +54,17 @@ export function Modal({
         >
           {/* Header */}
           {title && (
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">{title}</h3>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition"
+                className="text-muted-foreground hover:text-foreground transition"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
           )}
-          
+
           {/* Content */}
           <div className="px-6 py-4">
             {children}

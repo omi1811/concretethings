@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { Input, Textarea } from '@/components/ui/Input';
 import {
   ArrowRight,
   BarChart3,
@@ -39,7 +40,7 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
       const userStr = localStorage.getItem('user');
-      
+
       if (token && userStr) {
         setIsLoggedIn(true);
         try {
@@ -58,7 +59,7 @@ export default function Home() {
       icon: LayoutDashboard,
       href: '/dashboard',
       cta: 'Open dashboard',
-      iconClass: 'bg-blue-600 text-white',
+      iconClass: 'bg-blue-100 text-blue-700',
     },
     {
       title: 'Projects',
@@ -66,7 +67,7 @@ export default function Home() {
       icon: Building2,
       href: '/dashboard/projects',
       cta: 'View projects',
-      iconClass: 'bg-emerald-600 text-white',
+      iconClass: 'bg-emerald-100 text-emerald-700',
     },
     {
       title: 'Setup / Config',
@@ -74,7 +75,7 @@ export default function Home() {
       icon: Settings2,
       href: '/dashboard/settings',
       cta: 'Manage access',
-      iconClass: 'bg-orange-500 text-white',
+      iconClass: 'bg-orange-100 text-orange-700',
     },
     {
       title: 'Reports',
@@ -82,67 +83,9 @@ export default function Home() {
       icon: FileBarChart,
       href: '/dashboard/reports',
       cta: 'Explore reports',
-      iconClass: 'bg-indigo-600 text-white',
+      iconClass: 'bg-indigo-100 text-indigo-700',
     },
   ];
-
-  const projects = [];
-
-  const setupItems = [
-    {
-      name: 'User Directory',
-      description: 'Invite internal users, assign multi-project roles, and enforce fine-grained permissions.',
-      icon: Users,
-      highlights: ['Role-based access', 'Company hierarchy'],
-      href: '/dashboard/admin/users',
-      cta: 'Manage users',
-    },
-    {
-      name: 'Vendor Registry',
-      description: 'Onboard, audit, and monitor suppliers supporting your concrete and material workflows.',
-      icon: Truck,
-      highlights: ['Onboarding checklists', 'Performance tracking'],
-      href: '/dashboard/vendors',
-      cta: 'Review vendors',
-    },
-    {
-      name: 'Contractor Console',
-      description: 'Maintain contractor compliance, documentation, and site access in one place.',
-      icon: HardHat,
-      highlights: ['Compliance status', 'Document vault'],
-      href: '/dashboard/contractors',
-      cta: 'Open console',
-    },
-  ];
-
-  const reportStreams = [
-    {
-      name: 'Quality Intelligence',
-      description: 'Track cube strength variance, batch performance, and material approvals over time.',
-      icon: ClipboardCheck,
-      insights: ['Cube rejection trend', 'Batch analytics'],
-      href: '/dashboard/reports/quality',
-    },
-    {
-      name: 'Safety & NCR',
-      description: 'Monitor incident closures, NCR scoring, and permit-to-work adherence across sites.',
-      icon: ShieldCheck,
-      insights: ['Open NCR list', 'PTW compliance'],
-      href: '/dashboard/reports/safety',
-    },
-    {
-      name: 'Executive Summaries',
-      description: 'Generate export-ready PDF and spreadsheet snapshots for leadership and stakeholders.',
-      icon: FileText,
-      insights: ['KPI rollups', 'Weekly digests'],
-      href: '/dashboard/reports/executive',
-    },
-  ];
-
-  const activeProjects = projects.filter((project) => project.status === 'Active').length;
-  const inactiveProjects = projects.length - activeProjects;
-
-  // Navigation removed as per request
 
   const handleContactSubmit = async (event) => {
     event.preventDefault();
@@ -158,22 +101,22 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur">
+    <div className="min-h-screen bg-background text-foreground">
+      <nav className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 font-semibold text-white shadow-sm">PS</div>
-            <span className="text-xl font-semibold text-slate-900">ProSite</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground shadow-lg shadow-primary/20">PS</div>
+            <span className="text-xl font-bold tracking-tight">ProSite</span>
           </div>
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
               <>
-                <span className="text-sm font-medium text-slate-700">{user?.full_name || user?.email || 'User'}</span>
+                <span className="hidden text-sm font-medium text-muted-foreground sm:inline-block">{user?.full_name || user?.email || 'User'}</span>
                 <Button variant="outline" size="sm" onClick={() => { localStorage.clear(); window.location.href = '/login'; }}>Logout</Button>
               </>
             ) : (
               <>
-                <Link href="/login"><Button variant="outline" size="sm">Sign In</Button></Link>
+                <Link href="/login"><Button variant="ghost" size="sm">Sign In</Button></Link>
                 <Button size="sm" onClick={() => setShowContactModal(true)}>Contact Us</Button>
               </>
             )}
@@ -183,27 +126,29 @@ export default function Home() {
 
       <main>
         {!isLoggedIn ? (
-          <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-slate-50">
-            <div className="absolute inset-0 -z-10 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.7))]" />
-            <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:py-32">
+          <section className="relative overflow-hidden bg-gradient-to-b from-background via-muted/30 to-background pt-24 pb-32">
+            <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="text-center">
-                <p className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-medium text-blue-700">
-                  <BarChart3 className="h-4 w-4" />Professional Site Management
-                </p>
-                <h1 className="mt-8 text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
-                  Everything your site teams need
+                <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary mb-8">
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  Professional Site Management
+                </div>
+                <h1 className="text-5xl font-extrabold tracking-tight text-foreground sm:text-6xl lg:text-7xl mb-6">
+                  Everything your site <br className="hidden sm:block" />
+                  <span className="text-primary">teams need</span>
                 </h1>
-                <p className="mx-auto mt-6 max-w-2xl text-xl text-slate-600">
+                <p className="mx-auto max-w-2xl text-xl text-muted-foreground mb-10">
                   Comprehensive quality management, safety compliance, and project oversight in one powerful platform.
                 </p>
-                <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                   <Link href="/login">
-                    <Button size="lg" className="px-8 text-base">
+                    <Button size="lg" className="px-8 text-base h-12 rounded-full shadow-xl shadow-primary/20">
                       Sign In
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
-                  <Button size="lg" variant="outline" className="px-8 text-base" onClick={() => setShowContactModal(true)}>
+                  <Button size="lg" variant="outline" className="px-8 text-base h-12 rounded-full" onClick={() => setShowContactModal(true)}>
                     Contact Us
                   </Button>
                 </div>
@@ -211,36 +156,35 @@ export default function Home() {
             </div>
           </section>
         ) : (
-          <section className="py-16 sm:py-20">
+          <section className="py-16 sm:py-24">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <div className="text-center">
-                <h1 className="text-4xl font-bold text-slate-900 sm:text-5xl">Welcome back, {user?.full_name || 'User'}</h1>
-                <p className="mt-4 text-lg text-slate-600">Select a section to continue</p>
+              <div className="text-center mb-16">
+                <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Welcome back, {user?.full_name || 'User'}</h1>
+                <p className="mt-4 text-lg text-muted-foreground">Select a section to continue</p>
               </div>
-              
-              <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+
+              <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
                 {primarySections.map((section) => {
                   const Icon = section.icon;
                   return (
                     <Link
                       key={section.title}
                       href={section.href}
-                      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition hover:border-blue-300 hover:shadow-xl"
+                      className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 shadow-sm transition-all hover:shadow-xl hover:border-primary/50 hover:-translate-y-1"
                     >
                       <div className="relative z-10">
-                        <span className={`flex h-14 w-14 items-center justify-center rounded-xl ${section.iconClass} shadow-lg`}>
+                        <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${section.iconClass} mb-6 transition-transform group-hover:scale-110`}>
                           <Icon className="h-7 w-7" />
-                        </span>
-                        <h3 className="mt-6 text-2xl font-semibold text-slate-900 group-hover:text-blue-700">
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
                           {section.title}
                         </h3>
-                        <p className="mt-3 text-sm text-slate-600">{section.description}</p>
-                        <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-blue-600">
+                        <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{section.description}</p>
+                        <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-primary">
                           {section.cta}
                           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                         </div>
                       </div>
-                      <div className="absolute inset-0 -z-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                     </Link>
                   );
                 })}
@@ -250,72 +194,89 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="border-t border-slate-200 bg-slate-100 py-12">
+      <footer className="border-t border-border bg-muted/30 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 md:grid-cols-2">
             <div>
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 font-semibold text-white">PS</div>
-                <span className="text-lg font-semibold text-slate-900">ProSite</span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground">PS</div>
+                <span className="text-lg font-bold text-foreground">ProSite</span>
               </div>
-              <p className="mt-3 text-sm text-slate-600">Professional site management for concrete, safety, and compliance-led projects.</p>
+              <p className="text-sm text-muted-foreground max-w-xs">Professional site management for concrete, safety, and compliance-led projects.</p>
             </div>
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Contact</h3>
-              <div className="mt-3 space-y-2 text-sm text-slate-600">
-                <a href="mailto:shrotrio@gmail.com" className="flex items-center gap-2 hover:text-slate-900"><Mail className="h-4 w-4" />shrotrio@gmail.com</a>
-                <button onClick={() => setShowContactModal(true)} className="flex items-center gap-2 text-left hover:text-slate-900">Schedule a call<ArrowRight className="h-4 w-4" /></button>
+            <div className="md:text-right">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-4">Contact</h3>
+              <div className="space-y-2 text-sm">
+                <a href="mailto:shrotrio@gmail.com" className="flex items-center gap-2 md:justify-end text-foreground hover:text-primary transition-colors"><Mail className="h-4 w-4" />shrotrio@gmail.com</a>
+                <button onClick={() => setShowContactModal(true)} className="flex items-center gap-2 md:justify-end text-foreground hover:text-primary transition-colors w-full md:w-auto">Schedule a call<ArrowRight className="h-4 w-4" /></button>
               </div>
             </div>
           </div>
-          <div className="mt-10 border-t border-slate-200 pt-6 text-center text-sm text-slate-500"> 2025 ProSite. All rights reserved.</div>
+          <div className="mt-10 border-t border-border pt-6 text-center text-sm text-muted-foreground">© 2025 ProSite. All rights reserved.</div>
         </div>
       </footer>
 
       {showContactModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
-            <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
-              <h2 className="text-2xl font-semibold text-slate-900">Contact us</h2>
-              <button onClick={() => setShowContactModal(false)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"><X className="h-5 w-5" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="sticky top-0 flex items-center justify-between border-b border-border bg-card px-6 py-4 z-10">
+              <h2 className="text-2xl font-semibold text-foreground">Contact us</h2>
+              <button onClick={() => setShowContactModal(false)} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><X className="h-5 w-5" /></button>
             </div>
             {submitSuccess ? (
               <div className="px-6 py-12 text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100"><CheckCircle className="h-10 w-10 text-emerald-600" /></div>
-                <h3 className="text-2xl font-semibold text-slate-900">Thank you!</h3>
-                <p className="mt-2 text-sm text-slate-600">We will get back to you within 24 hours.</p>
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100"><CheckCircle className="h-10 w-10 text-green-600" /></div>
+                <h3 className="text-2xl font-semibold text-foreground">Thank you!</h3>
+                <p className="mt-2 text-muted-foreground">We will get back to you within 24 hours.</p>
               </div>
             ) : (
-              <form onSubmit={handleContactSubmit} className="space-y-4 px-6 py-6">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="text-sm font-medium text-slate-600">Full name *</label>
-                    <input type="text" required value={contactForm.name} onChange={(event) => setContactForm({ ...contactForm, name: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" placeholder="John Doe" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-600">Email *</label>
-                    <input type="email" required value={contactForm.email} onChange={(event) => setContactForm({ ...contactForm, email: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" placeholder="john@company.com" />
-                  </div>
+              <form onSubmit={handleContactSubmit} className="space-y-6 px-6 py-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <Input
+                    label="Full name"
+                    required
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    placeholder="John Doe"
+                  />
+                  <Input
+                    label="Email"
+                    type="email"
+                    required
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    placeholder="john@company.com"
+                  />
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="text-sm font-medium text-slate-600">Phone *</label>
-                    <input type="tel" required value={contactForm.phone} onChange={(event) => setContactForm({ ...contactForm, phone: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" placeholder="+91 9876543210" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-600">Company *</label>
-                    <input type="text" required value={contactForm.company} onChange={(event) => setContactForm({ ...contactForm, company: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" placeholder="ABC Construction" />
-                  </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <Input
+                    label="Phone"
+                    type="tel"
+                    required
+                    value={contactForm.phone}
+                    onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                    placeholder="+91 9876543210"
+                  />
+                  <Input
+                    label="Company"
+                    required
+                    value={contactForm.company}
+                    onChange={(e) => setContactForm({ ...contactForm, company: e.target.value })}
+                    placeholder="ABC Construction"
+                  />
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-600">Message</label>
-                  <textarea rows={4} value={contactForm.message} onChange={(event) => setContactForm({ ...contactForm, message: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" placeholder="Tell us about your rollout goals" />
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <Button type="submit" disabled={isSubmitting} className="flex-1">{isSubmitting ? 'Sending...' : 'Send message'}</Button>
+                <Textarea
+                  label="Message"
+                  rows={4}
+                  value={contactForm.message}
+                  onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                  placeholder="Tell us about your rollout goals"
+                />
+                <div className="flex gap-3 pt-2">
+                  <Button type="submit" isLoading={isSubmitting} className="flex-1">Send message</Button>
                   <Button type="button" variant="outline" onClick={() => setShowContactModal(false)} className="flex-1">Cancel</Button>
                 </div>
-                <div className="border-t border-slate-200 pt-4 text-center text-sm text-slate-500">Prefer email? <a href="mailto:shrotrio@gmail.com" className="font-medium text-blue-600 hover:text-blue-700">shrotrio@gmail.com</a></div>
+                <div className="border-t border-border pt-4 text-center text-sm text-muted-foreground">Prefer email? <a href="mailto:shrotrio@gmail.com" className="font-medium text-primary hover:underline">shrotrio@gmail.com</a></div>
               </form>
             )}
           </div>

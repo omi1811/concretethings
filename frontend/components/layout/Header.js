@@ -16,14 +16,14 @@ export function Header({ onMenuClick }) {
   const [currentLang, setCurrentLang] = useState('en');
   const router = useRouter();
   const pathname = usePathname();
-  
+
   useEffect(() => {
     loadUserData();
     // Load saved language preference
     const savedLang = localStorage.getItem('language') || 'en';
     setCurrentLang(savedLang);
   }, []);
-  
+
   async function loadUserData() {
     try {
       const userData = await getUserData();
@@ -32,79 +32,77 @@ export function Header({ onMenuClick }) {
       console.error('Error loading user data:', error);
     }
   }
-  
+
   async function handleLogout() {
     clearTokens();
     await clearUserData();
     router.push('/login');
   }
-  
+
   function handleLanguageChange(lang) {
     setCurrentLang(lang);
     localStorage.setItem('language', lang);
     setShowLangMenu(false);
-    
+
     // Reload page to apply language change
     // In production, you would use next-intl's locale switching
     window.location.reload();
   }
-  
+
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 lg:px-6 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-30 bg-card border-b border-border px-4 lg:px-6 h-16 flex items-center justify-between">
       {/* Left side */}
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
-          className="lg:hidden text-gray-600 hover:text-gray-900"
+          className="lg:hidden text-muted-foreground hover:text-foreground"
         >
           <Menu className="w-6 h-6" />
         </button>
-        
+
         <div className="hidden lg:flex items-center gap-3">
           <OfflineIndicator />
           <SyncStatus />
         </div>
       </div>
-      
+
       {/* Right side */}
       <div className="flex items-center gap-3">
         {/* Mobile status indicators */}
         <div className="lg:hidden flex items-center gap-2">
           <OfflineIndicator />
         </div>
-        
+
         {/* Language Switcher */}
         <div className="relative">
           <button
             onClick={() => setShowLangMenu(!showLangMenu)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted transition text-muted-foreground hover:text-foreground"
           >
             <Languages className="w-5 h-5" />
             <span className="hidden md:inline text-sm font-medium">
               {currentLang === 'en' ? 'English' : 'हिन्दी'}
             </span>
           </button>
-          
+
           {showLangMenu && (
             <>
-              <div 
+              <div
                 className="fixed inset-0 z-40"
                 onClick={() => setShowLangMenu(false)}
               />
-              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+              <div className="absolute right-0 mt-2 w-40 bg-card rounded-md shadow-lg border border-border py-1 z-50">
                 <button
                   onClick={() => handleLanguageChange('en')}
-                  className={`w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 ${
-                    currentLang === 'en' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                  }`}
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-muted ${currentLang === 'en' ? 'bg-primary/10 text-primary' : 'text-foreground'
+                    }`}
                 >
                   🇬🇧 English
                 </button>
                 <button
                   onClick={() => handleLanguageChange('hi')}
-                  className={`w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 ${
-                    currentLang === 'hi' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                  }`}
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-muted ${currentLang === 'hi' ? 'bg-primary/10 text-primary' : 'text-foreground'
+                    }`}
                 >
                   🇮🇳 हिन्दी
                 </button>
@@ -112,42 +110,42 @@ export function Header({ onMenuClick }) {
             </>
           )}
         </div>
-        
+
         {/* Notifications */}
-        <button className="relative text-gray-600 hover:text-gray-900">
+        <button className="relative text-muted-foreground hover:text-foreground">
           <Bell className="w-6 h-6" />
-          <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
+          <span className="absolute top-0 right-0 w-2 h-2 bg-destructive rounded-full" />
         </button>
-        
+
         {/* User menu */}
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition"
+            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted transition"
           >
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <User className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+              <User className="w-5 h-5 text-primary-foreground" />
             </div>
             <div className="hidden md:block text-left">
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-foreground">
                 {user?.full_name || 'User'}
               </p>
-              <p className="text-xs text-gray-500">{user?.role || 'Engineer'}</p>
+              <p className="text-xs text-muted-foreground">{user?.role || 'Engineer'}</p>
             </div>
-            <ChevronDown className="w-4 h-4 text-gray-500" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </button>
-          
+
           {/* Dropdown */}
           {showUserMenu && (
             <>
-              <div 
+              <div
                 className="fixed inset-0 z-40"
                 onClick={() => setShowUserMenu(false)}
               />
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-card rounded-md shadow-lg border border-border py-1 z-50">
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                 >
                   <LogOut className="w-4 h-4" />
                   Logout

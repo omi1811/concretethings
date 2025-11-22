@@ -1,26 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Save, Truck, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, Truck, Clock, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
+import { Input, Select, Textarea } from '@/components/ui/Input';
 import { pourActivityAPI } from '@/lib/api-optimized';
 import axios from 'axios';
 
-export default function QuickEntryBatchPage() {
+function QuickEntryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pourIdFromQuery = searchParams.get('pourId');
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [pourActivities, setPourActivities] = useState([]);
   const [selectedPour, setSelectedPour] = useState(null);
-  
+
   const [formData, setFormData] = useState({
     vehicleNumber: '',
     vendorName: '',
@@ -38,7 +39,7 @@ export default function QuickEntryBatchPage() {
   useEffect(() => {
     const projectId = localStorage.getItem('currentProjectId') || '1';
     loadPourActivities(projectId);
-    
+
     if (pourIdFromQuery) {
       loadPourActivity(pourIdFromQuery);
     }
@@ -77,7 +78,7 @@ export default function QuickEntryBatchPage() {
   const handlePourChange = (e) => {
     const pourId = e.target.value;
     setFormData(prev => ({ ...prev, pourActivityId: pourId }));
-    
+
     if (pourId) {
       const pour = pourActivities.find(p => p.id === parseInt(pourId));
       if (pour) {
@@ -107,7 +108,7 @@ export default function QuickEntryBatchPage() {
     try {
       const projectId = localStorage.getItem('currentProjectId') || '1';
       const token = localStorage.getItem('auth_token');
-      
+
       const payload = {
         projectId: parseInt(projectId),
         pourActivityId: formData.pourActivityId ? parseInt(formData.pourActivityId) : undefined,
@@ -132,7 +133,7 @@ export default function QuickEntryBatchPage() {
 
       if (response.data) {
         setSuccess('Batch created successfully via quick entry!');
-        
+
         // Reset form
         setFormData({
           vehicleNumber: '',
@@ -147,7 +148,7 @@ export default function QuickEntryBatchPage() {
           remarks: '',
           pourActivityId: formData.pourActivityId // Keep pour selection
         });
-        
+
         // Show success for 2 seconds then optionally redirect
         setTimeout(() => {
           setSuccess('');
@@ -162,7 +163,7 @@ export default function QuickEntryBatchPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-6 max-w-3xl mx-auto animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/dashboard/batches">
@@ -172,8 +173,8 @@ export default function QuickEntryBatchPage() {
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900">Quick Batch Entry</h1>
-          <p className="text-gray-600 mt-1">Fast entry for sites with external vehicle registers</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Quick Batch Entry</h1>
+          <p className="text-muted-foreground mt-1">Fast entry for sites with external vehicle registers</p>
         </div>
         <Link href="/dashboard/batches/new">
           <Button variant="outline" size="sm">
@@ -183,24 +184,26 @@ export default function QuickEntryBatchPage() {
       </div>
 
       {/* Info Alert */}
-      <Alert variant="info">
-        <AlertCircle className="w-4 h-4" />
+      <Alert variant="info" className="bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
+        <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
         <div>
-          <p className="font-medium">For sites where security manages vehicle entry</p>
-          <p className="text-sm mt-1">
-            This simplified form captures only QC-relevant data. Vehicle entry details are maintained by security team.
+          <p className="font-medium text-blue-900 dark:text-blue-300">Simplified Entry Mode</p>
+          <p className="text-sm mt-1 text-blue-700 dark:text-blue-400">
+            This form captures only QC-relevant data. Use this when vehicle entry details are maintained separately by security.
           </p>
         </div>
       </Alert>
 
       {error && (
         <Alert variant="danger" onClose={() => setError('')}>
+          <AlertCircle className="w-4 h-4" />
           {error}
         </Alert>
       )}
 
       {success && (
         <Alert variant="success" onClose={() => setSuccess('')}>
+          <CheckCircle2 className="w-4 h-4" />
           {success}
         </Alert>
       )}
@@ -213,10 +216,10 @@ export default function QuickEntryBatchPage() {
               <CardTitle className="text-base">Link to Pour Activity (Optional)</CardTitle>
             </CardHeader>
             <CardContent>
-              <select
+              <Select
+                label="Select Pour Activity"
                 value={formData.pourActivityId}
                 onChange={handlePourChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">No pour activity</option>
                 {pourActivities.map(pour => (
@@ -224,10 +227,10 @@ export default function QuickEntryBatchPage() {
                     {pour.pourId} - {pour.location?.gridReference} ({pour.designGrade})
                   </option>
                 ))}
-              </select>
-              
+              </Select>
+
               {selectedPour && (
-                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+                <div className="mt-3 p-3 bg-primary/5 border border-primary/10 rounded-md text-sm text-primary">
                   <strong>Linked to:</strong> {selectedPour.location?.description}
                 </div>
               )}
@@ -239,79 +242,58 @@ export default function QuickEntryBatchPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Truck className="w-5 h-5" />
+              <Truck className="w-5 h-5 text-primary" />
               Vehicle & Delivery
             </CardTitle>
+            <CardDescription>Enter the delivery details as per the challan.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Vehicle Number *
-                </label>
-                <input
-                  type="text"
-                  name="vehicleNumber"
-                  value={formData.vehicleNumber}
-                  onChange={handleChange}
-                  required
-                  placeholder="e.g., MH-01-1234"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <Input
+                label="Vehicle Number"
+                name="vehicleNumber"
+                value={formData.vehicleNumber}
+                onChange={handleChange}
+                required
+                placeholder="e.g., MH-01-1234"
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Vendor Name *
-                </label>
-                <input
-                  type="text"
-                  name="vendorName"
-                  value={formData.vendorName}
-                  onChange={handleChange}
-                  required
-                  placeholder="e.g., ABC Concrete"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <Input
+                label="Vendor Name"
+                name="vendorName"
+                value={formData.vendorName}
+                onChange={handleChange}
+                required
+                placeholder="e.g., ABC Concrete"
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Grade *
-                </label>
-                <select
-                  name="grade"
-                  value={formData.grade}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="M20">M20</option>
-                  <option value="M25">M25</option>
-                  <option value="M30">M30</option>
-                  <option value="M35">M35</option>
-                  <option value="M40">M40</option>
-                  <option value="M45">M45</option>
-                  <option value="M50">M50</option>
-                </select>
-              </div>
+              <Select
+                label="Grade"
+                name="grade"
+                value={formData.grade}
+                onChange={handleChange}
+                required
+              >
+                <option value="M20">M20</option>
+                <option value="M25">M25</option>
+                <option value="M30">M30</option>
+                <option value="M35">M35</option>
+                <option value="M40">M40</option>
+                <option value="M45">M45</option>
+                <option value="M50">M50</option>
+              </Select>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Quantity (m³) *
-                </label>
-                <input
-                  type="number"
-                  name="quantityReceived"
-                  value={formData.quantityReceived}
-                  onChange={handleChange}
-                  step="0.1"
-                  min="0.1"
-                  required
-                  placeholder="e.g., 1.5"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <Input
+                label="Quantity (m³)"
+                type="number"
+                name="quantityReceived"
+                value={formData.quantityReceived}
+                onChange={handleChange}
+                step="0.1"
+                min="0.1"
+                required
+                placeholder="e.g., 1.5"
+              />
             </div>
           </CardContent>
         </Card>
@@ -320,39 +302,29 @@ export default function QuickEntryBatchPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Clock className="w-5 h-5" />
+              <Clock className="w-5 h-5 text-primary" />
               Delivery Time
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date *
-                </label>
-                <input
-                  type="date"
-                  name="deliveryDate"
-                  value={formData.deliveryDate}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <Input
+                label="Date"
+                type="date"
+                name="deliveryDate"
+                value={formData.deliveryDate}
+                onChange={handleChange}
+                required
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Time *
-                </label>
-                <input
-                  type="time"
-                  name="deliveryTime"
-                  value={formData.deliveryTime}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <Input
+                label="Time"
+                type="time"
+                name="deliveryTime"
+                value={formData.deliveryTime}
+                onChange={handleChange}
+                required
+              />
             </div>
           </CardContent>
         </Card>
@@ -364,59 +336,42 @@ export default function QuickEntryBatchPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Slump (mm)
-                </label>
-                <input
-                  type="number"
-                  name="slump"
-                  value={formData.slump}
-                  onChange={handleChange}
-                  placeholder="e.g., 100"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <Input
+                label="Slump (mm)"
+                type="number"
+                name="slump"
+                value={formData.slump}
+                onChange={handleChange}
+                placeholder="e.g., 100"
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Temperature (°C)
-                </label>
-                <input
-                  type="number"
-                  name="temperature"
-                  value={formData.temperature}
-                  onChange={handleChange}
-                  placeholder="e.g., 32"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <Input
+                label="Temperature (°C)"
+                type="number"
+                name="temperature"
+                value={formData.temperature}
+                onChange={handleChange}
+                placeholder="e.g., 32"
+              />
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
-                <input
-                  type="text"
+                <Input
+                  label="Location"
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
                   placeholder="e.g., Grid A-12, Slab"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Remarks
-                </label>
-                <textarea
+                <Textarea
+                  label="Remarks"
                   name="remarks"
                   value={formData.remarks}
                   onChange={handleChange}
                   rows={2}
                   placeholder="Additional notes..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -428,7 +383,7 @@ export default function QuickEntryBatchPage() {
           <Button type="submit" disabled={loading} className="flex-1">
             {loading ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 Saving...
               </>
             ) : (
@@ -446,5 +401,20 @@ export default function QuickEntryBatchPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function QuickEntryBatchPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading form...</p>
+        </div>
+      </div>
+    }>
+      <QuickEntryContent />
+    </Suspense>
   );
 }

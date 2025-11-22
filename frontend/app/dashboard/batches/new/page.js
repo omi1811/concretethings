@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Upload, Camera, Layers } from 'lucide-react';
 import Link from 'next/link';
@@ -8,15 +8,16 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
+import { Spinner, LoadingScreen } from '@/components/ui/Spinner';
 import { batchAPI, cubeTestAPI, labAPI, pourActivityAPI, projectsAPI } from '@/lib/api-optimized';
 import CubeCastingModal from '@/components/CubeCastingModal';
 
-export default function NewBatchPage() {
+function NewBatchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryProjectId = searchParams.get('project_id');
   const pourIdFromQuery = searchParams.get('pourId');
-  
+
   const [activeProjectId, setActiveProjectId] = useState('');
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -28,7 +29,7 @@ export default function NewBatchPage() {
   const [pourActivities, setPourActivities] = useState([]);
   const [selectedPour, setSelectedPour] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     batchNumber: '',
     vendorId: '',
@@ -48,18 +49,10 @@ export default function NewBatchPage() {
   // Check authentication first
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token') || 
-                    localStorage.getItem('access_token') || 
-                    localStorage.getItem('auth_token');
-              {/*
-              <Input
-                label="Vehicle Number"
-                name="vehicleNumber"
-                value={formData.vehicleNumber}
-                onChange={handleChange}
-                placeholder="e.g., DL-01-AB-1234"
-              />
-              */}
+      const token = localStorage.getItem('token') ||
+        localStorage.getItem('access_token') ||
+        localStorage.getItem('auth_token');
+
       setIsAuthenticated(true);
     }
   }, [router]);
@@ -67,7 +60,7 @@ export default function NewBatchPage() {
   useEffect(() => {
     // Only load projects if authenticated
     if (!isAuthenticated) return;
-    
+
     if (queryProjectId) {
       setActiveProjectId(queryProjectId);
       if (typeof window !== 'undefined') {
@@ -90,7 +83,7 @@ export default function NewBatchPage() {
   useEffect(() => {
     // Only fetch projects if authenticated
     if (!isAuthenticated) return;
-    
+
     let isMounted = true;
 
     async function fetchProjects() {
@@ -232,7 +225,7 @@ export default function NewBatchPage() {
   const handlePourChange = (e) => {
     const pourId = e.target.value;
     setFormData(prev => ({ ...prev, pourActivityId: pourId }));
-    
+
     if (pourId) {
       const pour = pourActivities.find(p => p.id === parseInt(pourId));
       if (pour) {
@@ -340,7 +333,7 @@ export default function NewBatchPage() {
   const handleCubeCasting = async (cubeData) => {
     try {
       const result = await cubeTestAPI.bulkCreate(cubeData);
-      
+
       if (result?.success ?? !result?.error) {
         alert(`Successfully created ${result.data.cube_tests?.length || 0} cube test sets!`);
         router.push(cubeTestsHref);
@@ -363,9 +356,7 @@ export default function NewBatchPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
-            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
-          </div>
+          <Spinner size="lg" />
           <p className="mt-4 text-gray-600">Checking authentication...</p>
         </div>
       </div>
@@ -452,7 +443,7 @@ export default function NewBatchPage() {
                 link it to a pour activity. This groups batches together for single cube test sets.
               </p>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Select Pour Activity
@@ -469,14 +460,14 @@ export default function NewBatchPage() {
                   </option>
                 ))}
               </select>
-              
+
               {pourActivities.length === 0 && (
                 <p className="mt-2 text-sm text-gray-500">
                   No active pour activities. <Link href="/dashboard/pour-activities/new" className="text-blue-600 hover:underline">Create one</Link> to group batches.
                 </p>
               )}
             </div>
-            
+
             {selectedPour && (
               <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <h4 className="font-semibold text-green-900 mb-2">Linked to Pour Activity</h4>
@@ -574,15 +565,6 @@ export default function NewBatchPage() {
                 onChange={handleChange}
                 required
               />
-              {/*
-              <Input
-                label="Vehicle Number"
-                name="vehicleNumber"
-                value={formData.vehicleNumber}
-                onChange={handleChange}
-                placeholder="e.g., DL-01-AB-1234"
-              />
-              */}
               {/* Driver Name removed from form intentionally */}
               <Input
                 label="Location"
@@ -668,5 +650,13 @@ export default function NewBatchPage() {
         labs={labs}
       />
     </div>
+  );
+}
+
+export default function NewBatchPage() {
+  return (
+    <Suspense fallback={<LoadingScreen message="Loading batch form..." />}>
+      <NewBatchContent />
+    </Suspense>
   );
 }

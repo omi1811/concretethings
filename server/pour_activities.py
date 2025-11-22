@@ -11,10 +11,19 @@ Supports:
 from flask import Blueprint, jsonify, request
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from server.models import PourActivity, BatchRegister, Project, User, db
+from server.models import PourActivity, BatchRegister, Project, User
+from server.db import db
 
+DEBUG_LOG_PATH = r"C:\Users\shrot\OneDrive\Desktop\ProSite\concretethings\server_debug.log"
+
+def _log_debug(msg):
+    try:
+        with open(DEBUG_LOG_PATH, "a") as f:
+            f.write(f"{datetime.now()}: {msg}\n")
+    except:
+        pass
 
 def _get_current_user():
     """Resolve the current authenticated user from the JWT."""
@@ -56,13 +65,16 @@ def create_pour_activity():
         "remarks": "Large slab pour requiring 3+ vehicles"
     }
     """
+
     try:
+        _log_debug("create_pour_activity called")
         data = request.get_json() or {}
         
-        # Validate required fields
+        _log_debug("Validating projectId")
         if not data.get('projectId'):
             return jsonify({"error": "projectId is required"}), 400
         
+        _log_debug("Getting current user")
         current_user = _get_current_user()
         if not current_user:
             return jsonify({"error": "User not found"}), 404
@@ -72,15 +84,14 @@ def create_pour_activity():
         except (TypeError, ValueError):
             return jsonify({"error": "projectId must be numeric"}), 400
 
-        # Verify project exists and user has access
+        _log_debug(f"Verifying project {project_id}")
         project = db.session.query(Project).filter_by(id=project_id).first()
         if not project:
             return jsonify({"error": "Project not found"}), 404
         
-        # Auto-generate pour_id if not provided
+        _log_debug("Generating pour_id")
         pour_id = data.get('pourId')
         if not pour_id:
-            # Generate: POUR-YYYY-NNN
             last_pour = db.session.query(PourActivity)\
                 .filter_by(project_id=project_id)\
                 .order_by(PourActivity.id.desc())\
@@ -88,7 +99,6 @@ def create_pour_activity():
             
             next_number = 1
             if last_pour and last_pour.pour_id:
-                # Extract number from POUR-2025-001
                 parts = last_pour.pour_id.split('-')
                 if len(parts) == 3 and parts[2].isdigit():
                     next_number = int(parts[2]) + 1
@@ -96,16 +106,13 @@ def create_pour_activity():
             year = datetime.now().year
             pour_id = f"POUR-{year}-{next_number:03d}"
         
-        # Get location data
+        _log_debug("Creating PourActivity object")
         location = data.get('location', {})
         
-        # Create pour activity
         pour = PourActivity(
             project_id=project_id,
             pour_id=pour_id,
             pour_date=datetime.fromisoformat(data.get('pourDate', datetime.now().isoformat())),
-            
-            # Location details
             building_name=location.get('buildingName'),
             floor_level=location.get('floorLevel'),
             zone=location.get('zone'),
@@ -113,20 +120,69 @@ def create_pour_activity():
             structural_element_type=location.get('structuralElementType'),
             element_id=location.get('elementId'),
             location_description=location.get('description'),
-            
-            # Concrete details
             concrete_type=data.get('concreteType', 'Normal'),
             design_grade=data.get('designGrade'),
             total_quantity_planned=data.get('totalQuantityPlanned', 0.0),
-            
-            # Status
             status='in_progress',
             started_at=datetime.now(),
             created_by=current_user.id,
             remarks=data.get('remarks')
         )
         
+        _log_debug("Adding pour to session")
         db.session.add(pour)
+        db.session.flush()
+        
+        # Create planned cube tests if schedule provided
+        cube_schedule = data.get('cubeSchedule', [])
+        if cube_schedule:
+            from server.models import CubeTestRegister, TestReminder
+            
+            current_set_number = 0
+            
+            for item in cube_schedule:
+                try:
+                    age = int(item.get('age'))
+                    sets = int(item.get('sets', 1))
+                    
+                    for _ in range(sets):
+                        current_set_number += 1
+                        
+                        # Calculate testing date
+                        casting_date = pour.pour_date
+                        testing_date = casting_date + timedelta(days=age)
+                        
+                        # Create planned test
+                        cube_test = CubeTestRegister(
+                            project_id=project_id,
+                            batch_id=None,  # No batch yet
+                            pour_activity_id=pour.id,
+                            set_number=current_set_number,
+                            test_age_days=age,
+                            casting_date=casting_date,
+                            cast_by=current_user.id,
+                            concrete_type=pour.concrete_type,
+                            concrete_grade=pour.design_grade,
+                            number_of_cubes=3,  # Default
+                            pass_fail_status='planned',
+                            remarks="Planned test from Pour Activity"
+                        )
+                        db.session.add(cube_test)
+                        db.session.flush()
+                        
+                        # Create reminder
+                        reminder = TestReminder(
+                            cube_test_id=cube_test.id,
+                            project_id=project_id,
+                            reminder_date=testing_date,  # Pass datetime object
+                            test_age_days=age,
+                            status='pending'
+                        )
+                        db.session.add(reminder)
+                        
+                except (ValueError, TypeError):
+                    continue
+        
         db.session.commit()
         
         return jsonify({
@@ -136,6 +192,9 @@ def create_pour_activity():
         
     except Exception as e:
         db.session.rollback()
+        import traceback
+        _log_debug(f"Error creating pour activity: {e}")
+        _log_debug(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
 

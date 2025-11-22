@@ -21,11 +21,42 @@ export default function NewPourActivityPage() {
     structuralElementType: 'Slab',
     elementId: '',
     locationDescription: '',
-    concreteType: 'Normal',
+    concreteType: 'Conventional',
     designGrade: 'M30',
     totalQuantityPlanned: '',
     remarks: ''
   });
+
+  const [cubeSchedule, setCubeSchedule] = useState([
+    { age: 7, sets: 1 },
+    { age: 28, sets: 1 }
+  ]);
+
+  const updateSchedule = (type) => {
+    let newSchedule = [];
+    if (type === 'Conventional') {
+      newSchedule = [{ age: 7, sets: 1 }, { age: 28, sets: 1 }];
+    } else if (type === 'Free Flow Aluform') {
+      newSchedule = [{ age: 3, sets: 1 }, { age: 7, sets: 1 }, { age: 28, sets: 1 }];
+    } else if (type === 'PT') {
+      newSchedule = [{ age: 5, sets: 1 }, { age: 7, sets: 1 }, { age: 28, sets: 1 }];
+    }
+    setCubeSchedule(newSchedule);
+  };
+
+  const handleScheduleChange = (index, field, value) => {
+    const newSchedule = [...cubeSchedule];
+    newSchedule[index][field] = parseInt(value) || 0;
+    setCubeSchedule(newSchedule);
+  };
+
+  const addScheduleItem = () => {
+    setCubeSchedule([...cubeSchedule, { age: 0, sets: 1 }]);
+  };
+
+  const removeScheduleItem = (index) => {
+    setCubeSchedule(cubeSchedule.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +64,6 @@ export default function NewPourActivityPage() {
 
     try {
       const projectId = localStorage.getItem('currentProjectId') || '1';
-      
       const payload = {
         projectId: parseInt(projectId),
         pourDate: formData.pourDate,
@@ -44,14 +74,14 @@ export default function NewPourActivityPage() {
           gridReference: formData.gridReference,
           structuralElementType: formData.structuralElementType,
           elementId: formData.elementId,
-          description: formData.locationDescription
+          description: formData.locationDescription,
         },
         concreteType: formData.concreteType,
         designGrade: formData.designGrade,
         totalQuantityPlanned: parseFloat(formData.totalQuantityPlanned),
-        remarks: formData.remarks
+        remarks: formData.remarks,
+        cubeSchedule: cubeSchedule
       };
-
       const result = await pourActivityAPI.create(payload);
       const pourActivity = result?.data?.pourActivity || result?.pourActivity;
 
@@ -74,6 +104,9 @@ export default function NewPourActivityPage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'concreteType') {
+      updateSchedule(value);
+    }
   };
 
   return (
@@ -128,14 +161,10 @@ export default function NewPourActivityPage() {
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="Normal">Normal Concrete</option>
+                  <option value="Conventional">Conventional Concrete</option>
+                  <option value="Free Flow Aluform">Free Flow Aluform Concrete</option>
                   <option value="PT">Post-Tensioned (PT) Concrete</option>
                 </select>
-                {formData.concreteType === 'PT' && (
-                  <p className="mt-1 text-xs text-blue-600">
-                    ℹ️ PT concrete will be tested at 5 days (instead of 3 days)
-                  </p>
-                )}
               </div>
 
               <div>
@@ -149,14 +178,35 @@ export default function NewPourActivityPage() {
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="M20">M20</option>
-                  <option value="M25">M25</option>
-                  <option value="M30">M30</option>
-                  <option value="M35">M35</option>
-                  <option value="M40">M40</option>
-                  <option value="M45">M45</option>
-                  <option value="M50">M50</option>
-                  <option value="M40FF">M40 Free Flow</option>
+                  <optgroup label="Conventional">
+                    <option value="M10">M10</option>
+                    <option value="M15">M15</option>
+                    <option value="M20">M20</option>
+                    <option value="M25">M25</option>
+                    <option value="M30">M30</option>
+                    <option value="M35">M35</option>
+                    <option value="M40">M40</option>
+                    <option value="M45">M45</option>
+                    <option value="M50">M50</option>
+                    <option value="M55">M55</option>
+                    <option value="M60">M60</option>
+                  </optgroup>
+                  <optgroup label="Free Flow Aluform">
+                    <option value="M20FF">M20FF</option>
+                    <option value="M25FF">M25FF</option>
+                    <option value="M30FF">M30FF</option>
+                    <option value="M35FF">M35FF</option>
+                    <option value="M40FF">M40FF</option>
+                    <option value="M45FF">M45FF</option>
+                    <option value="M50FF">M50FF</option>
+                    <option value="M60FF">M60FF</option>
+                  </optgroup>
+                  <optgroup label="Post-Tensioned (PT)">
+                    <option value="M30PT">M30PT</option>
+                    <option value="M35PT">M35PT</option>
+                    <option value="M40PT">M40PT</option>
+                    <option value="M50PT">M50PT</option>
+                  </optgroup>
                 </select>
               </div>
 
@@ -176,6 +226,53 @@ export default function NewPourActivityPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Testing Schedule */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Layers className="w-5 h-5" />
+              Cube Testing Schedule
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-500">
+              Define the planned testing schedule. Reminders will be sent automatically.
+            </p>
+            <div className="space-y-2">
+              {cubeSchedule.map((item, index) => (
+                <div key={index} className="flex gap-4 items-center">
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Test Age (Days)</label>
+                    <input
+                      type="number"
+                      value={item.age}
+                      onChange={(e) => handleScheduleChange(index, 'age', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Number of Sets</label>
+                    <input
+                      type="number"
+                      value={item.sets}
+                      onChange={(e) => handleScheduleChange(index, 'sets', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div className="pt-5">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeScheduleItem(index)} className="text-red-500">
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={addScheduleItem} className="mt-2">
+                + Add Test Age
+              </Button>
             </div>
           </CardContent>
         </Card>
